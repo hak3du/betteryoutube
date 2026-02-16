@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE CONSTRUCT | CORRIDOR MODE</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Helvetica Neue', Arial, sans-serif; color: #e0e0e0; }
+
+        /* --- 3D BACKGROUND --- */
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+
+        /* --- VIDEO PLAYER --- */
+        #player-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 70vw; max-width: 1100px;
+            aspect-ratio: 16/9;
+            background: #000;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 30px 60px rgba(0,0,0,1);
+            border: 1px solid #222;
+        }
+        #player-overlay.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+        #video-frame { width: 100%; height: 100%; }
+
+        /* --- HUD --- */
+        #hud { position: absolute; z-index: 20; width: 100%; height: 100%; pointer-events: none; }
+
+        /* --- LEFT: NAVIGATION (ALWAYS VISIBLE IN FOCUS) --- */
+        #nav-panel {
+            position: absolute; top: 50%; left: 40px;
+            transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 15px;
+            pointer-events: auto;
+            opacity: 0; transition: opacity 0.5s;
+        }
+        #nav-panel.visible { opacity: 1; }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid #555;
+            color: #aaa;
+            padding: 12px 20px;
+            font-family: inherit; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
+            cursor: pointer; transition: 0.2s; text-align: left;
+            width: 140px;
+        }
+        .nav-btn:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.05); }
+        .nav-btn.overview { border-color: #fff; color: #fff; font-weight: bold; background: rgba(255,255,255,0.1); }
+        .nav-btn.overview:hover { background: #fff; color: #000; }
+
+        /* --- RIGHT: DIRECT OPTIMIZATION --- */
+        #asset-panel {
+            position: absolute; top: 50%; right: 40px;
+            transform: translateY(-50%);
+            width: 240px; background: #111; border-left: 2px solid #fff;
+            padding: 25px; pointer-events: auto;
+            opacity: 0; transition: opacity 0.5s, transform 0.5s;
+            transform: translate(20px, -50%); /* Slight offset for slide effect */
+        }
+        #asset-panel.visible { opacity: 1; transform: translate(0, -50%); }
+
+        .label { font-size: 0.7rem; color: #666; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        .btn-asset {
+            width: 100%; background: #fff; color: #000; border: none;
+            padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 15px;
+        }
+        .btn-asset:hover { background: #ccc; }
+
+        /* --- EXIT DEBRIEF (MODAL) --- */
+        #debrief-modal {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: #000; border-top: 1px solid #333;
+            padding: 40px; text-align: center;
+            transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 30; pointer-events: auto;
+        }
+        #debrief-modal.active { transform: translateY(0); }
+        .debrief-actions { margin-top: 20px; display: flex; justify-content: center; gap: 20px; }
+        .btn-debrief {
+            background: transparent; border: 1px solid #444; color: #fff;
+            padding: 10px 30px; cursor: pointer; text-transform: uppercase; font-size: 0.9rem;
+        }
+        .btn-debrief.confirm { border-color: #00ffc8; color: #00ffc8; }
+        .btn-debrief.confirm:hover { background: #00ffc8; color: #000; }
+
+        /* --- INFO OVERLAY --- */
+        #info-overlay {
+            position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+            text-align: center; width: 100%; pointer-events: none;
+        }
+        h1.title { margin: 0; font-size: 1.4rem; letter-spacing: -0.5px; font-weight: 300; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        p.meta { margin: 5px 0 0; font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 2px; }
+
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+</head>
+<body>
+
+    <!-- 3D Scene -->
+    <div id="canvas-container"></div>
+
+    <!-- Video Player -->
+    <div id="player-overlay">
+        <div id="video-frame"><div id="player"></div></div>
+    </div>
+
+    <!-- UI Layer -->
+    <div id="hud">
+        
+        <!-- Top Info -->
+        <div id="info-overlay">
+            <h1 class="title" id="vid-title">Select a Node</h1>
+            <p class="meta" id="vid-meta">System Standby</p>
+        </div>
+
+        <!-- LEFT: NAVIGATION (Always visible when active) -->
+        <div id="nav-panel">
+            <div class="label">Syllabus Control</div>
+            <button class="nav-btn" onclick="navigate(-1)">Previous</button>
+            <button class="nav-btn overview" onclick="returnToOverview()">Return to Deck</button>
+            <button class="nav-btn" onclick="navigate(1)">Next Chapter</button>
+        </div>
+
+        <!-- RIGHT: ASSET OPTIMIZATION -->
+        <div id="asset-panel">
+            <span class="label">Direct Optimization</span>
+            <p style="font-size: 0.9rem; line-height: 1.4; color: #ccc;">
+                Asset detected. High relevance match.
+            </p>
+            <button class="btn-asset" onclick="directBuy()">Acquire Asset ($)</button>
+        </div>
+    </div>
+
+    <!-- EXIT DEBRIEF (Mission Complete) -->
+    <div id="debrief-modal">
+        <h2 style="margin:0; font-weight:300; letter-spacing: 2px; color:#fff;">SESSION COMPLETE</h2>
+        <p style="color:#666; font-size: 0.9rem; margin-top:10px;">Did this content solve your query?</p>
+        <div class="debrief-actions">
+            <button class="btn-debrief" onclick="closeDebrief(false)">Continue Watching</button>
+            <button class="btn-debrief confirm" onclick="closeDebrief(true)">Yes, End Session</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. DATA: THE SYLLABUS (Linear Path) ---
+        const syllabus = [
+            { id: '0526tl87eQ0', title: "How a Mechanical Watch Works", author: "Animagraffs", z: 0, type: "Engineering" },
+            { id: 'yQqAG7uHdLM', title: "Inside Google's Data Center", author: "Google", z: -30, type: "Infrastructure" }, // 30 units back
+            { id: 'fCn8ts9KXsQ', title: "Primitive Technology: Hut", author: "Prim Tech", z: -60, type: "Craft" },
+            { id: '1ZYbU82GVz4', title: "The Spielberg Oner", author: "Every Frame a Painting", z: -90, type: "Film Analysis" }
+        ];
+
+        let currentIndex = 0;
+        let isOverview = true;
+        let player;
+
+        // --- 2. THREE.JS SCENE (THE CORRIDOR) ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.FogExp2(0x050505, 0.015); // Soft fade into distance
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+        // Start in "Overview" mode: High up, looking down the line
+        camera.position.set(0, 15, 20); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // --- 3. BUILD THE CORRIDOR ---
+        const geometry = new THREE.PlaneGeometry(14, 8);
+        const cards = [];
+
+        // Floor line (The path)
+        const points = [];
+        for(let i=0; i<100; i++) points.push(new THREE.Vector3(0, -4, -i * 2));
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.5 });
+        const floorLine = new THREE.Line(lineGeo, lineMat);
+        scene.add(floorLine);
+
+        syllabus.forEach((item, index) => {
+            // Card Material
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0x1a1a1a, 
+                side: THREE.DoubleSide, 
+                transparent: true, 
+                opacity: 0.9 
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(0, 0, item.z);
+            
+            // Highlight Border (White wireframe)
+            const borderGeo = new THREE.PlaneGeometry(14.2, 8.2);
+            const borderMat = new THREE.MeshBasicMaterial({ color: 0x333333, wireframe: true, transparent:true, opacity:0.4 });
+            const border = new THREE.Mesh(borderGeo, borderMat);
+            border.position.z = -0.1;
+            mesh.add(border);
+
+            // Add Text Label (Simple HTML overlay mapped to 3D position is better, but we'll stick to pure 3D for now or update title on hover)
+            // For now, we rely on clicking to see the title.
+            
+            mesh.userData = { ...item, index: index };
+            scene.add(mesh);
+            cards.push(mesh);
+        });
+
+        // --- 4. NAVIGATION LOGIC ---
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('mousedown', onMouseDown, false);
+
+        function onMouseDown(event) {
+            if(!isOverview) return; // Ignore clicks if already focused
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(cards);
+            if (intersects.length > 0) {
+                const index = intersects[0].object.userData.index;
+                enterFocusMode(index);
+            }
+        }
+
+        function enterFocusMode(index) {
+            isOverview = false;
+            currentIndex = index;
+            const targetZ = syllabus[index].z;
+
+            // Animate Camera: Move to eye level with the card, slightly in front
+            new TWEEN.Tween(camera.position)
+                .to({ x: 0, y: 0, z: targetZ + 12 }, 1500) // z + 12 puts us in front of the card
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+
+            // UI Transition
+            document.getElementById('player-overlay').classList.add('active');
+            document.getElementById('nav-panel').classList.add('visible');
+            document.getElementById('asset-panel').classList.add('visible');
+            document.getElementById('debrief-modal').classList.remove('active'); // Hide debrief if switching
+
+            loadVideo(index);
+        }
+
+        window.returnToOverview = function() {
+            isOverview = true;
+
+            // Fly back up
+            new TWEEN.Tween(camera.position)
+                .to({ x: 0, y: 15, z: 20 }, 1500)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+
+            // Hide UI
+            document.getElementById('player-overlay').classList.remove('active');
+            document.getElementById('nav-panel').classList.remove('visible');
+            document.getElementById('asset-panel').classList.remove('visible');
+            document.getElementById('debrief-modal').classList.remove('active');
+
+            // Pause Player
+            if(player) player.pauseVideo();
+        };
+
+        window.navigate = function(direction) {
+            let newIndex = currentIndex + direction;
+            if (newIndex >= 0 && newIndex < syllabus.length) {
+                enterFocusMode(newIndex);
+            } else {
+                // Bounce effect or just nothing
+            }
+        };
+
+        // --- 5. PLAYER & DATA LOADING ---
+
+        function loadVideo(index) {
+            const data = syllabus[index];
+            document.getElementById('vid-title').innerText = data.title;
+            document.getElementById('vid-meta').innerText = `CHAPTER 0${index+1}: ${data.type.toUpperCase()}`;
+
+            if (player && player.loadVideoById) {
+                player.loadVideoById(data.id);
+            }
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%', width: '100%',
+                videoId: syllabus[0].id,
+                playerVars: { 'autoplay': 0, 'controls': 1, 'rel': 0 },
+                events: { 'onStateChange': onPlayerStateChange }
+            });
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED && !isOverview) {
+                // TRIGGER EXIT DEBRIEF
+                document.getElementById('debrief-modal').classList.add('active');
+            }
+        }
+
+        window.closeDebrief = function(success) {
+            document.getElementById('debrief-modal').classList.remove('active');
+            if (success) {
+                // Session Complete - Return to Overview
+                returnToOverview();
+                alert("SESSION LOGGED.\nOptimization Data Updated.");
+            } else {
+                // Continue - Suggest next or replay
+                if (currentIndex < syllabus.length - 1) {
+                    navigate(1);
+                } else {
+                    // End of line
+                    returnToOverview();
+                }
+            }
+        };
+
+        window.directBuy = function() {
+            const title = document.getElementById('vid-title').innerText;
+            alert(`DIRECT TRANSACTION INITIATED:\n\nAsset: ${title}\nCreator Payout: 95%\nPlatform Fee: 5%`);
+        };
+
+        // --- 6. RENDER LOOP ---
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+
+            if(isOverview) {
+                // Slow drift in overview
+                camera.position.x = Math.sin(time * 0.0002) * 2;
+                camera.lookAt(0, 0, -40); // Look down the hallway
+            } else {
+                // Look straight at the current card
+                camera.lookAt(0, 0, syllabus[currentIndex].z);
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // API Load
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    </script>
+</body>
+</html>
