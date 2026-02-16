@@ -3,414 +3,507 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE CONSTRUCT | IMMERSIVE MODE</title>
+    <title>THE CONSTRUCT | CORRIDOR MODE</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Helvetica Neue', Arial, sans-serif; color: #e0e0e0; }
-
-        /* --- 1. THE BACKGROUND VIDEO PLAYER --- */
-        #bg-player-container {
+        /* --- RESET & BASE --- */
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; color: #fff; }
+        
+        /* --- LAYERS --- */
+        /* Layer 1: Background Video (Blurred/Atmospheric) */
+        #bg-video-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; overflow: hidden;
-            pointer-events: none; /* Let clicks pass through to 3D */
+            z-index: 0; pointer-events: none; opacity: 0.3; overflow: hidden;
         }
-        /* The actual iframe, scaled huge to cover screen */
-        #bg-player {
-            position: absolute; top: 50%; left: 50%;
+        #bg-video-iframe {
             width: 100vw; height: 56.25vw; /* 16:9 Aspect Ratio */
-            min-height: 100vh; min-width: 177.77vh; /* 16:9 Aspect Ratio */
+            min-height: 100vh; min-width: 177.77vh;
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            opacity: 0.6; /* Slightly dimmed for readability */
-            filter: blur(4px) contrast(1.2); /* Cinematic blur effect */
-            transition: opacity 1s ease;
+            filter: blur(10px) brightness(0.4) contrast(1.2);
+            pointer-events: none;
         }
-        #bg-player.focused {
-            opacity: 1; filter: blur(0px) contrast(1); /* Sharp when watching */
-        }
-
-        /* Dimming overlay to make text pop */
-        #dim-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 1; pointer-events: none;
+        
+        /* Layer 2: 3D Scene (The Corridor) */
+        #canvas-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
         }
 
-        /* --- 2. 3D SCENE LAYER --- */
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+        /* Layer 3: UI (HUD) */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
 
-        /* --- 3. UI LAYER --- */
-        #hud { position: absolute; z-index: 10; width: 100%; height: 100%; pointer-events: none; }
-
-        /* Search & Top Bar */
-        #top-bar {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; pointer-events: auto;
-            background: rgba(0,0,0,0.8); padding: 10px 20px; border: 1px solid #444; border-radius: 30px;
-            backdrop-filter: blur(10px);
+        /* Search Bar */
+        #search-container {
+            pointer-events: auto; width: 100%; text-align: center; padding-top: 30px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
         }
         #search-input {
-            background: transparent; border: none; color: #fff; font-size: 1rem;
-            width: 200px; outline: none; font-family: inherit;
+            background: rgba(20,20,20,0.8); border: 1px solid #444; color: #fff;
+            padding: 12px 20px; width: 300px; border-radius: 30px; outline: none;
+            font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;
+            transition: 0.3s; backdrop-filter: blur(5px);
         }
-        #search-btn, #mute-btn {
-            background: #fff; color: #000; border: none; border-radius: 50%;
-            width: 32px; height: 32px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;
-        }
-        #mute-btn { background: #333; color: #fff; border: 1px solid #666; }
-        #mute-btn.active { background: #fff; color: #000; }
+        #search-input:focus { border-color: #fff; width: 350px; background: rgba(0,0,0,0.9); }
+        #search-input::placeholder { color: #666; }
 
-        /* --- LEFT: NAVIGATION --- */
-        #nav-panel {
-            position: absolute; top: 50%; left: 40px; transform: translateY(-50%);
-            display: flex; flex-direction: column; gap: 15px; pointer-events: auto;
+        /* Layer 4: Focus Overlay (The Player) */
+        #focus-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 20;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
         }
-        .nav-btn {
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
-            border: 1px solid #555; color: #ddd; padding: 15px 25px;
-            font-family: inherit; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;
-            cursor: pointer; transition: 0.3s; text-align: left; width: 220px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .nav-btn:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.1); transform: translateX(5px); }
-        .nav-btn.bridge { border-color: #ff0055; color: #ff0055; }
-        .nav-btn.bridge:hover { background: #ff0055; color: #fff; }
+        #focus-overlay.active { opacity: 1; pointer-events: auto; }
         
-        /* --- RIGHT: LOGIC PANEL --- */
-        #algo-panel {
-            position: absolute; top: 50%; right: 40px; transform: translateY(-50%);
-            width: 280px; background: rgba(10,10,10,0.85); backdrop-filter: blur(15px);
-            border-left: 2px solid #00ffcc; padding: 25px;
-            pointer-events: auto; box-shadow: 0 0 30px rgba(0,255,204,0.1);
+        .focus-layout {
+            display: flex; width: 90%; max-width: 1400px; height: 80%; gap: 20px;
         }
-        .label { font-size: 0.7rem; color: #00ffcc; text-transform: uppercase; margin-bottom: 10px; display: block; letter-spacing: 2px; }
-        .algo-text { font-family: 'Courier New', monospace; font-size: 0.8rem; color: #ccc; line-height: 1.5; margin-bottom: 20px; }
-        .btn-asset { width: 100%; background: #fff; color: #000; border: none; padding: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
 
-        /* --- CENTER INFO --- */
-        #center-info {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            text-align: center; pointer-events: none; text-shadow: 0 2px 10px #000;
+        .video-wrapper {
+            flex: 3; background: #111; border: 1px solid #333;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
-        h1.title { margin: 0; font-size: 2rem; letter-spacing: -1px; font-weight: 300; color: #fff; }
-        p.meta { margin: 5px 0 0; font-size: 0.9rem; color: #aaa; text-transform: uppercase; letter-spacing: 3px; }
+        #focus-player { width: 100%; height: 100%; }
 
+        .sidebar {
+            flex: 1; display: flex; flex-direction: column; justify-content: space-between; pointer-events: auto;
+        }
+
+        .panel-box { background: #0a0a0a; border: 1px solid #222; padding: 25px; }
+        .panel-title { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; }
+        
+        /* Buttons */
+        .nav-row { display: flex; gap: 10px; flex-direction: column; }
+        .btn {
+            background: transparent; border: 1px solid #444; color: #ccc; padding: 15px;
+            text-transform: uppercase; font-size: 0.8rem; cursor: pointer; transition: 0.2s;
+            text-align: left; display: flex; justify-content: space-between; align-items: center;
+        }
+        .btn:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.05); }
+        .btn-primary { border-color: #fff; color: #fff; font-weight: bold; }
+        .btn-primary:hover { background: #fff; color: #000; }
+        
+        .bridge-tag { font-size: 0.6rem; background: #222; padding: 2px 6px; border-radius: 2px; color: #aaa; }
+
+        /* Exit Debrief */
+        #debrief {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: #080808; border-top: 1px solid #333;
+            padding: 30px; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            z-index: 30;
+        }
+        #debrief.active { transform: translateY(0); }
+        .debrief-text h3 { margin: 0 0 5px 0; font-weight: 400; letter-spacing: 1px; }
+        .debrief-text p { margin: 0; color: #666; font-size: 0.9rem; }
+        .debrief-actions { display: flex; gap: 15px; }
+        .btn-debrief { padding: 10px 25px; font-size: 0.8rem; }
+
+        /* Loading Text */
+        #loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #444; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem;
+            z-index: 0; pointer-events: none;
+        }
     </style>
+    
+    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 </head>
 <body>
 
-    <!-- 1. BACKGROUND VIDEO (The "Environment") -->
-    <div id="bg-player-container">
-        <div id="player"></div> <!-- YouTube mounts here -->
-    </div>
-    <div id="dim-overlay"></div>
+    <!-- 1. LOADING INDICATOR -->
+    <div id="loader">Initializing The Construct...</div>
 
-    <!-- 2. 3D CORRIDOR -->
+    <!-- 2. BACKGROUND VIDEO (Atmosphere) -->
+    <div id="bg-video-container">
+        <div id="bg-video-iframe"></div>
+    </div>
+
+    <!-- 3. 3D CORRIDOR (Spatial Interface) -->
     <div id="canvas-container"></div>
 
-    <!-- 3. UI LAYER -->
-    <div id="hud">
-        
-        <!-- Top Bar -->
-        <div id="top-bar">
-            <input type="text" id="search-input" placeholder="Search Syllabus..." autocomplete="off">
-            <button id="search-btn">&#10140;</button>
-            <div style="width:1px; background:#444; height:20px; align-self:center;"></div>
-            <button id="mute-btn" onclick="toggleMute()">SOUND</button>
+    <!-- 4. UI LAYER (HUD) -->
+    <div id="ui-layer">
+        <div id="search-container">
+            <input type="text" id="search-input" placeholder="SEARCH TOPIC OR VIBE (e.g. 'SPACE', 'CALM')" autocomplete="off">
         </div>
+    </div>
 
-        <!-- Left Nav -->
-        <div id="nav-panel">
-            <div class="label" style="color:#666">SYLLABUS NAV</div>
-            <button class="nav-btn" onclick="navLogic('prev')">&#8592; PREVIOUS CHAPTER</button>
-            <button class="nav-btn" onclick="navLogic('next')">NEXT CHAPTER &#8594;</button>
-            <div style="height:15px"></div>
-            <!-- Dynamic Bridge Button -->
-            <button class="nav-btn bridge" id="btn-bridge" onclick="navLogic('bridge')">TAKE BRIDGE</button>
-        </div>
-
-        <!-- Right Logic Panel -->
-        <div id="algo-panel">
-            <span class="label">Current Analysis</span>
-            <div id="algo-content" class="algo-text">
-                Waiting for selection...
+    <!-- 5. FOCUS MODE (Deep Dive) -->
+    <div id="focus-overlay">
+        <div class="focus-layout">
+            <!-- Left: Nav -->
+            <div class="sidebar">
+                <div class="panel-box">
+                    <div class="panel-title">Navigation</div>
+                    <div class="nav-row">
+                        <button class="btn" onclick="navigate(-1)"><span>PREV</span> <span>←</span></button>
+                        <button class="btn btn-primary" onclick="returnToOverview()"><span>EXIT TO VOID</span> <span>✕</span></button>
+                        <button class="btn" onclick="navigate(1)"><span>NEXT CHAPTER</span> <span>→</span></button>
+                    </div>
+                </div>
+                
+                <div class="panel-box">
+                    <div class="panel-title">Direct Optimization</div>
+                    <p style="font-size:0.8rem; color:#888; margin-bottom:10px;">Asset detected. High relevance match.</p>
+                    <button class="btn btn-primary" onclick="triggerTransaction()">ACQUIRE ASSET ($)</button>
+                </div>
             </div>
-            <span class="label">Direct Optimization</span>
-            <button class="btn-asset" onclick="directBuy()">Acquire Asset</button>
+
+            <!-- Center: Video -->
+            <div class="video-wrapper">
+                <div id="focus-player"></div>
+            </div>
+
+            <!-- Right: Context/Next -->
+            <div class="sidebar">
+                <div class="panel-box">
+                    <div class="panel-title">Context</div>
+                    <h2 id="focus-title" style="margin:0; font-size:1.2rem; font-weight:300; line-height:1.4;">Video Title</h2>
+                    <p id="focus-meta" style="margin-top:5px; color:#666; font-size:0.8rem; text-transform:uppercase;">Creator</p>
+                </div>
+
+                <div class="panel-box">
+                    <div class="panel-title">Algorithm Suggestion</div>
+                    <div id="algo-text" style="font-size:0.8rem; color:#aaa; margin-bottom:15px;">
+                        Current Mood: <span style="color:#fff;">Focused</span>
+                    </div>
+                    <button class="btn" onclick="takeBridge()">
+                        <span>TAKE BRIDGE</span> <span class="bridge-tag">NOVELTY</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <!-- Center Info -->
-        <div id="center-info">
-            <h1 class="title" id="vid-title">THE CONSTRUCT</h1>
-            <p class="meta" id="vid-meta">Select a Node to Initialize Stream</p>
+        <!-- EXIT DEBRIEF (Mission Complete) -->
+        <div id="debrief">
+            <div class="debrief-text">
+                <h3>SESSION COMPLETE</h3>
+                <p>Did this content solve your query?</p>
+            </div>
+            <div class="debrief-actions">
+                <button class="btn btn-debrief" onclick="closeDebrief(false)">Continue Watching</button>
+                <button class="btn btn-debrief btn-primary" onclick="closeDebrief(true)">Yes, End Session</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- 1. DATABASE: DESIGN & ENGINEERING SYLLABUS (Highly Related) ---
-        const db = [
-            { id: '0526tl87eQ0', title: "How a Mechanical Watch Works", tags: ['engineering', 'mechanics'], vibe: 0.2, topic: "Engineering" },
-            { id: 'yQqAG7uHdLM', title: "Inside Google's Data Center", tags: ['tech', 'infrastructure'], vibe: 0.5, topic: "Tech" },
-            { id: 'fCn8ts9KXsQ', title: "Primitive Tech: Tiled Roof Hut", tags: ['craft', 'building'], vibe: 0.1, topic: "Craft" },
-            { id: 'YsR7r3EAxXQ', title: "How to Make a Mechanical Keyboard", tags: ['diy', 'tech'], vibe: 0.3, topic: "DIY" },
-            { id: '9bZkp7q19f0', title: "The Art of Typography", tags: ['design', 'art'], vibe: 0.4, topic: "Design" },
-            { id: 'gCNeDWCI0vo', title: "First Life with David Attenborough", tags: ['nature', 'biology'], vibe: 0.3, topic: "Nature" },
-            { id: '0fKBhvDjuy0', title: "Apollo 11 Landing", tags: ['space', 'history'], vibe: 0.9, topic: "Space" },
-            { id: '1ZYbU82GVz4', title: "The Spielberg Oner", tags: ['film', 'camera'], vibe: 0.6, topic: "Film" }
+        // --- 1. THE DATABASE (Curated, Embed-Safe Videos) ---
+        // Vibe: 1 (Calm) to 10 (High Energy)
+        // Type: Tech, Nature, Phil, DIY
+        const database = [
+            { id: '0526tl87eQ0', title: "How a Mechanical Watch Works", author: "Animagraffs", tags: ["tech", "engineering", "calm"], vibe: 3 },
+            { id: 'yQqAG7uHdLM', title: "Inside Google's Data Center", author: "Google", tags: ["tech", "infrastructure", "clean"], vibe: 4 },
+            { id: 'fCn8ts9KXsQ', title: "Primitive Technology: Hut", author: "Prim Tech", tags: ["diy", "nature", "silence"], vibe: 1 },
+            { id: '1ZYbU82GVz4', title: "The Spielberg Oner", author: "Every Frame a Painting", tags: ["film", "analysis", "calm"], vibe: 3 },
+            { id: 't_rzYnXa8gU', title: "Hubble Ultra Deep Field", author: "SpaceRip", tags: ["space", "nature", "epic"], vibe: 2 },
+            { id: 'L_LUpnjgPso', title: "How to Fold a Fitted Sheet", author: "Howdini", tags: ["diy", "lifehack", "calm"], vibe: 2 },
+            { id: '2p_0DShh9vQ', title: "The History of the World", author: "Horrible Histories", tags: ["history", "fun", "energy"], vibe: 8 },
+            { id: 'r7RqQhTfE9U', title: "Most Satisfying Video", author: "Satisfying World", tags: ["visual", "oddly satisfying", "chill"], vibe: 2 },
+            { id: 'e-P5IFTqB98', title: "Neutron Star Collision", author: "Kurzgesagt", tags: ["space", "science", "epic"], vibe: 6 },
+            { id: 'g-CcEtbqbbw', title: "The Internet's Own Boy", author: "PBS", tags: ["tech", "documentary", "serious"], vibe: 5 },
+            { id: 'W6NZfCO5SIk', title: "The Art of Clean Code", author: "Unity", tags: ["tech", "coding", "focus"], vibe: 4 },
+            { id: '8KpS2bANm00', title: "Making a Samurai Sword", author: "Discovery", tags: ["diy", "craft", "intense"], vibe: 6 },
+            { id: 'J0AxyB1z2cM', title: "How to Escape a Car Underwater", author: "Discovery", tags: ["diy", "survival", "urgent"], vibe: 9 },
+            { id: 'QAo2D3nR-tY', title: "Plato's Allegory of the Cave", author: "CrashCourse", tags: ["phil", "education", "calm"], vibe: 4 },
+            { id: 'Bqq1QkqZCrI', title: "The Physics of Time", author: "Veritasium", tags: ["science", "physics", "mindblowing"], vibe: 5 }
         ];
 
-        // --- 2. ALGORITHM ENGINE ---
-        class Algorithm {
-            constructor(data) { this.data = data; }
-            
-            search(q) {
-                const low = q.toLowerCase();
-                return this.data.filter(v => v.title.toLowerCase().includes(low) || v.tags.some(t=>t.includes(low)));
-            }
+        // State
+        let activeSyllabus = [...database];
+        let currentIndex = 0;
+        let isOverview = true;
+        let bgPlayer, focusPlayer;
+        let cards = [];
 
-            getNext(current) {
-                // Find next in list or closest topic match
-                const idx = this.data.indexOf(current);
-                if(idx < this.data.length -1) return this.data[idx+1];
-                // Loop or find similar
-                return this.data.find(v => v.topic === current.topic && v.id !== current.id) || this.data[0];
+        // --- 2. ALGORITHM: RESONANCE ENGINE ---
+        function filterSyllabus(query) {
+            const q = query.toLowerCase();
+            if (!q) {
+                activeSyllabus = [...database];
+            } else {
+                // Logic: Word Matching OR Vibe Matching
+                activeSyllabus = database.filter(v => {
+                    const matchesWord = v.title.toLowerCase().includes(q) || v.tags.some(t => t.includes(q));
+                    
+                    // "Mood" matching (e.g., "chill", "fast", "epic")
+                    let matchesVibe = false;
+                    if (["calm", "slow", "chill", "meditative"].includes(q)) matchesVibe = v.vibe < 4;
+                    if (["fast", "energy", "fun", "epic"].includes(q)) matchesVibe = v.vibe > 6;
+                    
+                    return matchesWord || matchesVibe;
+                });
             }
-
-            getBridge(current) {
-                // Find DIFFERENT topic, SIMILAR vibe
-                const candidates = this.data.filter(v => v.topic !== current.topic);
-                return candidates.sort((a,b) => Math.abs(a.vibe - current.vibe) - Math.abs(b.vibe - current.vibe))[0];
-            }
+            rebuildCorridor();
         }
 
-        const algo = new Algorithm(db);
-        let currentVideo = db[0]; // Start with Watch
-        let isMuted = true;
+        function findBridge(currentVideo) {
+            // Find a video with similar vibe but DIFFERENT tags
+            const bridge = activeSyllabus.find(v => {
+                return Math.abs(v.vibe - currentVideo.vibe) <= 2 && 
+                       !v.tags.some(t => currentVideo.tags.includes(t)) &&
+                       v.id !== currentVideo.id;
+            });
+            return bridge || activeSyllabus[0];
+        }
 
-        // --- 3. THREE.JS SCENE ---
+        // --- 3. THREE.JS SETUP ---
         const scene = new THREE.Scene();
-        // Transparent background so we see the video behind it
-        scene.background = null; 
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.FogExp2(0x050505, 0.035);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-        camera.position.set(0, 10, 30); // Back view
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 2, 8); // Initial Overview Pos
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // Alpha true for transparency
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Lighting for the 3D objects to pop against the video
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight.position.set(5, 10, 7);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(0, 10, 5);
         scene.add(dirLight);
 
-        // Build Corridor
-        const loader = new THREE.TextureLoader();
-        const cardGroup = new THREE.Group();
-        scene.add(cardGroup);
+        // Floor Grid
+        const gridHelper = new THREE.GridHelper(100, 50, 0x333333, 0x111111);
+        gridHelper.position.y = -2.5;
+        scene.add(gridHelper);
 
-        function buildCorridor(vids) {
-            // Clear
-            while(cardGroup.children.length > 0){ cardGroup.remove(cardGroup.children[0]); }
-            
-            const geometry = new THREE.PlaneGeometry(12, 6.75); // 16:9
-            const borderGeo = new THREE.PlaneGeometry(12.5, 7.25);
+        // --- 4. BUILD THE CORRIDOR ---
+        const textureLoader = new THREE.TextureLoader();
+        const cardGeo = new THREE.PlaneGeometry(4, 2.25); // 16:9 aspect
 
-            vids.forEach((vid, i) => {
-                const z = -i * 15;
-                
-                // Card Material (Use transparent png or just color + texture)
-                const material = new THREE.MeshPhongMaterial({ 
-                    color: 0xffffff, 
-                    transparent: true, 
-                    opacity: 0.9,
-                    side: THREE.DoubleSide
+        function rebuildCorridor() {
+            // Clear existing cards
+            cards.forEach(c => scene.remove(c));
+            cards = [];
+
+            activeSyllabus.forEach((item, index) => {
+                // Create Material
+                const material = new THREE.MeshBasicMaterial({ 
+                    color: 0x222222, // Placeholder color until texture loads
+                    side: THREE.DoubleSide 
                 });
                 
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(0, 0, z);
-                mesh.userData = vid;
+                const mesh = new THREE.Mesh(cardGeo, material);
+                // Position: Spread them out along Z axis
+                mesh.position.set(0, 0, -index * 3.5);
+                mesh.userData = { ...item, index: index, originalZ: -index * 3.5 };
+                
+                // Load Thumbnail
+                textureLoader.load(`https://img.youtube.com/vi/${item.id}/hqdefault.jpg`, (tex) => {
+                    material.map = tex;
+                    material.color.setHex(0xffffff); // Reset color to white so texture shows
+                    material.needsUpdate = true;
+                });
 
-                // Border (Neon glow)
-                const borderMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, wireframe: true, transparent: true, opacity: 0.5 });
+                // Add a glowing border
+                const borderGeo = new THREE.PlaneGeometry(4.1, 2.35);
+                const borderMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: true, transparent: true, opacity: 0.3 });
                 const border = new THREE.Mesh(borderGeo, borderMat);
-                border.position.z = -0.1;
+                border.position.z = -0.01;
                 mesh.add(border);
 
-                // Load Texture
-                loader.load(`https://img.youtube.com/vi/${vid.id}/hqdefault.jpg`, (tex) => {
-                    mesh.material.map = tex;
-                    mesh.material.needsUpdate = true;
-                });
-
-                cardGroup.add(mesh);
-            });
-        }
-        buildCorridor(db); // Init with DB
-
-        // --- 4. BACKGROUND PLAYER LOGIC ---
-        let player;
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('player', {
-                height: '100%', width: '100%',
-                videoId: currentVideo.id,
-                playerVars: { 
-                    'autoplay': 1, 
-                    'controls': 0, // Hide controls for cinematic background
-                    'loop': 1, 
-                    'playlist': currentVideo.id, // Loop single video
-                    'mute': 1 
-                },
-                events: { 'onReady': onPlayerReady }
+                scene.add(mesh);
+                cards.push(mesh);
             });
         }
 
-        function onPlayerReady(event) {
-            updateBackground(currentVideo);
-        }
+        // Initial Build
+        rebuildCorridor();
 
-        function updateBackground(vid) {
-            currentVideo = vid;
-            
-            // Update UI
-            document.getElementById('vid-title').innerText = vid.title;
-            document.getElementById('vid-meta').innerText = `TOPIC: ${vid.topic.toUpperCase()} // VIBE: ${vid.vibe}`;
-            
-            // Update Algorithm Panel
-            const bridge = algo.getBridge(vid);
-            const vibeDiff = Math.abs(bridge.vibe - vid.vibe).toFixed(2);
-            const matchScore = (1 - vibeDiff) * 100;
-            
-            document.getElementById('algo-content').innerHTML = `
-                TOPIC: <span style="color:#fff">${vid.topic}</span><br>
-                VIBE SCORE: ${vid.vibe}<br><br>
-                <span style="color:#ff0055">BRIDGE DETECTED:</span><br>
-                Topic: ${bridge.topic}<br>
-                Vibe Match: ${matchScore.toFixed(0)}%
-            `;
-
-            // Update Bridge Button Text
-            document.getElementById('btn-bridge').innerText = `BRIDGE TO ${bridge.topic.toUpperCase()}`;
-
-            // Change Background Video
-            if(player && player.loadVideoById) {
-                player.loadVideoById({
-                    videoId: vid.id,
-                    startSeconds: 0,
-                    suggestedQuality: 'hd1080'
-                });
-                if(isMuted) player.mute();
-                else player.unMute();
-            }
-        }
-
-        // --- 5. INTERACTION ---
+        // --- 5. INTERACTION & NAVIGATION ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        window.addEventListener('mousemove', (event) => {
+            if(!isOverview) return;
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             
-            // Hover Effect logic (optional preview)
+            // Hover Logic
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cardGroup.children);
-            if(intersects.length > 0) {
+            const intersects = raycaster.intersectObjects(cards);
+            
+            if (intersects.length > 0) {
                 document.body.style.cursor = 'pointer';
-                // Could highlight here
+                const data = intersects[0].object.userData;
+                // Switch background video on hover
+                if(bgPlayer && bgPlayer.loadVideoById && bgPlayer.getVideoData().video_id !== data.id) {
+                    bgPlayer.loadVideoById(data.id);
+                    bgPlayer.mute();
+                    bgPlayer.playVideo();
+                }
             } else {
                 document.body.style.cursor = 'default';
             }
         });
 
-        window.addEventListener('mousedown', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        window.addEventListener('mousedown', (event) => {
+            if(!isOverview) return;
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cardGroup.children);
-            if(intersects.length > 0) {
-                updateBackground(intersects[0].object.userData);
-                // Slight camera zoom effect could go here
+            const intersects = raycaster.intersectObjects(cards);
+            if (intersects.length > 0) {
+                enterFocusMode(intersects[0].object.userData.index);
             }
         });
 
-        // --- 6. NAVIGATION FUNCTIONS ---
-        window.navLogic = function(type) {
-            let next = null;
-            if(type === 'next') next = algo.getNext(currentVideo);
-            if(type === 'prev') {
-                const idx = db.indexOf(currentVideo);
-                if(idx > 0) next = db[idx-1];
-            }
-            if(type === 'bridge') next = algo.getBridge(currentVideo);
+        function enterFocusMode(index) {
+            isOverview = false;
+            currentIndex = index;
+            const data = activeSyllabus[index];
 
-            if(next) {
-                // Animate Camera to next card?
-                const targetZ = db.indexOf(next) * -15;
-                new TWEEN.Tween(camera.position)
-                    .to({ z: 30 + targetZ }, 1000)
-                    .easing(TWEEN.Easing.Cubic.Out)
-                    .start();
-                
-                updateBackground(next);
+            // UI Transition
+            document.getElementById('focus-overlay').classList.add('active');
+            document.getElementById('focus-title').innerText = data.title;
+            document.getElementById('focus-meta').innerText = data.author;
+            document.getElementById('debrief').classList.remove('active');
+            
+            // 3D Camera Transition: Fly into the card
+            const targetZ = data.originalZ;
+            new TWEEN.Tween(camera.position)
+                .to({ x: 0, y: 0, z: targetZ + 1.8 }, 1000) // Get close
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+
+            // Load Focus Player
+            if (focusPlayer) {
+                focusPlayer.loadVideoById(data.id);
+                focusPlayer.playVideo();
+            }
+        }
+
+        window.returnToOverview = function() {
+            isOverview = true;
+            document.getElementById('focus-overlay').classList.remove('active');
+            document.getElementById('debrief').classList.remove('active');
+            
+            if (focusPlayer) focusPlayer.pauseVideo();
+
+            new TWEEN.Tween(camera.position)
+                .to({ x: 0, y: 2, z: 8 }, 1200)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .start();
+        };
+
+        window.navigate = function(dir) {
+            let nextIndex = currentIndex + dir;
+            if (nextIndex >= 0 && nextIndex < activeSyllabus.length) {
+                enterFocusMode(nextIndex);
             }
         };
 
-        window.toggleMute = function() {
-            isMuted = !isMuted;
-            const btn = document.getElementById('mute-btn');
-            if(isMuted) {
-                player.mute();
-                btn.classList.remove('active');
+        // Bridge Logic
+        window.takeBridge = function() {
+            const current = activeSyllabus[currentIndex];
+            const bridge = findBridge(current);
+            
+            // Find index of bridge in active list
+            const bridgeIndex = activeSyllabus.findIndex(v => v.id === bridge.id);
+            if (bridgeIndex !== -1) {
+                // Animate "warp" effect
+                document.getElementById('algo-text').innerHTML = `Warping to: <span style="color:#00ffc8;">${bridge.title}</span>`;
+                setTimeout(() => {
+                    enterFocusMode(bridgeIndex);
+                    document.getElementById('algo-text').innerText = "Current Mood: " + (bridge.vibe > 5 ? "Energetic" : "Focused");
+                }, 800);
+            }
+        };
+
+        // --- 6. YOUTUBE API ---
+        function onYouTubeIframeAPIReady() {
+            // Background Player (Atmosphere)
+            bgPlayer = new YT.Player('bg-video-iframe', {
+                height: '100%', width: '100%',
+                videoId: database[0].id,
+                playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1, 'loop': 1, 'playlist': database.map(d=>d.id).join(',') },
+                events: { 'onReady': (e) => e.target.setPlaybackQuality('default') }
+            });
+
+            // Focus Player
+            focusPlayer = new YT.Player('focus-player', {
+                height: '100%', width: '100%',
+                videoId: database[0].id,
+                playerVars: { 'autoplay': 0, 'controls': 1, 'rel': 0 },
+                events: { 'onStateChange': onPlayerStateChange }
+            });
+            
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED && !isOverview) {
+                document.getElementById('debrief').classList.add('active');
+            }
+        }
+
+        // Debrief
+        window.closeDebrief = function(success) {
+            document.getElementById('debrief').classList.remove('active');
+            if (success) {
+                returnToOverview();
+                alert("SESSION LOGGED.\nOptimization Data Updated.");
             } else {
-                player.unMute();
-                btn.classList.add('active');
+                navigate(1); // Next video
             }
         };
 
-        // Search
-        document.getElementById('search-btn').addEventListener('click', () => {
-            const q = document.getElementById('search-input').value;
-            const res = algo.search(q);
-            if(res.length) {
-                db.length = 0; db.push(...res); // Update main list
-                buildCorridor(db);
-                updateBackground(db[0]);
-                camera.position.z = 30; // Reset cam
+        window.triggerTransaction = function() {
+            const title = document.getElementById('focus-title').innerText;
+            alert(`DIRECT TRANSACTION INITIATED:\n\nAsset: ${title}\nCreator Payout: 95%\nPlatform Fee: 5%`);
+        };
+
+        // Search Listener
+        document.getElementById('search-input').addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                filterSyllabus(e.target.value);
+                // Reset camera pos
+                new TWEEN.Tween(camera.position).to({x:0, y:2, z:8}, 1000).start();
             }
         });
 
-        window.directBuy = function() { alert("Direct Optimization: Asset acquired."); };
-
-        // --- 7. LOOP ---
+        // --- 7. RENDER LOOP ---
         function animate(time) {
             requestAnimationFrame(animate);
             TWEEN.update(time);
-            
-            // Gentle floating of cards
-            cardGroup.children.forEach((card, i) => {
-                card.position.y = Math.sin(time * 0.001 + i) * 0.5;
-            });
 
-            camera.lookAt(0, 0, camera.position.z - 50); // Always look forward
+            if (isOverview) {
+                // Idle drift
+                camera.position.x = Math.sin(time * 0.0003) * 0.5;
+                camera.lookAt(0, 0, -10);
+            } else {
+                // Lock camera on current card
+                const targetZ = activeSyllabus[currentIndex].originalZ;
+                camera.lookAt(0, 0, targetZ);
+            }
+
             renderer.render(scene, camera);
         }
         animate();
 
-        // API
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        // Resize
+        // Handle Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // Inject API Script
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
     </script>
 </body>
