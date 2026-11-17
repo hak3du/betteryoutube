@@ -83,10 +83,10 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 #video-pavilion.active{opacity:1;visibility:visible}
 #video-pavilion:before{content:"";position:absolute;width:min(76vmin,900px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(3,8,12,.06),rgba(3,8,12,.72) 68%,transparent 72%);filter:blur(12px)}
 .pavilion-stage{width:min(48vmin,620px);height:min(48vmin,620px);perspective:1300px;position:relative;z-index:1}
-.pavilion-cube{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(28deg);transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.pavilion-cube{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(28deg);animation:pavilionTurn 38s linear infinite;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
 .pavilion-face{position:absolute;inset:0;overflow:hidden;background:#05090d;border:1px solid rgba(155,231,226,.72);box-shadow:inset 0 0 36px rgba(95,218,211,.12),0 0 28px rgba(95,218,211,.13);backface-visibility:visible}
 .pavilion-face iframe{width:100%;height:100%;border:0;display:block;pointer-events:auto}
-.pavilion-face.front{transform:translateZ(calc(min(48vmin,620px)/2))}
+.pavilion-face.front{transform:translateZ(min(24vmin,310px))}
 .pavilion-face.back{transform:rotateY(180deg) translateZ(calc(min(48vmin,620px)/2))}
 .pavilion-face.right{transform:rotateY(90deg) translateZ(calc(min(48vmin,620px)/2))}
 .pavilion-face.left{transform:rotateY(-90deg) translateZ(calc(min(48vmin,620px)/2))}
@@ -95,6 +95,8 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 .pavilion-caption{position:absolute;z-index:3;left:50%;bottom:calc(50% - min(31vmin,390px));transform:translateX(-50%);padding:9px 15px;background:rgba(4,9,13,.84);border:1px solid rgba(155,231,226,.32);color:#dffafa;font-size:9px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;max-width:80vw;overflow:hidden;text-overflow:ellipsis}
 #canvas-container.pavilion-dim{filter:brightness(.23) saturate(.65);transition:filter .45s}
 #ui.pavilion-dim{opacity:.28;transition:opacity .45s}
+@keyframes pavilionTurn{from{transform:rotateX(-18deg) rotateY(0deg)}to{transform:rotateX(342deg) rotateY(360deg)}}
+@media(prefers-reduced-motion:reduce){.pavilion-cube{animation:none}}
 @media(max-width:760px){.pavilion-stage{width:76vw;height:76vw}.pavilion-face.front{transform:translateZ(38vw)}.pavilion-face.back{transform:rotateY(180deg) translateZ(38vw)}.pavilion-face.right{transform:rotateY(90deg) translateZ(38vw)}.pavilion-face.left{transform:rotateY(-90deg) translateZ(38vw)}.pavilion-face.top{transform:rotateX(90deg) translateZ(38vw)}.pavilion-face.bottom{transform:rotateX(-90deg) translateZ(38vw)}.pavilion-caption{bottom:calc(50% - 48vw);font-size:7px}}
 
 </style>
