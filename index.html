@@ -54,6 +54,15 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 #settings small{margin-top:15px;color:#73828c}
 .category{flex-shrink:0}
 @media(max-width:760px){.settings-toggle{right:16px;top:190px;padding:9px}.search-wrap{top:137px}.scene-heading{top:245px}.rail{top:84px}.settings-toggle{top:188px}}
+
+/* Penrose navigation */
+.loop-nav{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);display:grid;grid-template-columns:42px 42px 42px;grid-template-rows:36px 36px;gap:5px;pointer-events:auto;z-index:8}
+.loop-nav button{border:1px solid rgba(155,231,226,.32);background:rgba(7,12,17,.82);backdrop-filter:blur(12px);color:#b9d9da;font-size:17px;cursor:pointer;transition:.2s}
+.loop-nav button:hover,.loop-nav button:focus-visible{border-color:var(--cyan);background:rgba(155,231,226,.15);color:#fff;outline:none}
+.loop-nav .up{grid-column:2;grid-row:1}.loop-nav .left{grid-column:1;grid-row:2}.loop-nav .down{grid-column:2;grid-row:2}.loop-nav .right{grid-column:3;grid-row:2}
+.loop-counter{position:absolute;left:50%;bottom:137px;transform:translateX(-50%);font-size:8px;letter-spacing:2px;color:#91a5ad;pointer-events:none;white-space:nowrap}
+.hint{bottom:22px}
+@media(max-width:760px){.loop-nav{bottom:48px}.loop-counter{bottom:128px}.hint{bottom:12px;max-width:calc(100% - 30px);overflow:hidden;text-overflow:ellipsis}}
 </style>
 </head>
 <body>
@@ -66,7 +75,7 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
   <nav class="rail" id="categories"><div class="rail-label">Explore environments</div></nav>
   <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" placeholder="SEARCH YOUTUBE — PRESS ENTER TO EXPLORE" autocomplete="off"><div id="search-state">ADD A YOUTUBE DATA API KEY TO LOAD LIVE RESULTS</div></div><button id="settings-toggle" class="settings-toggle">CONNECT YOUTUBE API</button>
   <div class="scene-heading"><div class="eyebrow" id="scene-kicker">ENVIRONMENT 01 / THE QUANTUM GALLERY</div><h1 id="scene-title">The Quantum Gallery</h1><p id="scene-description">From the arguments of Einstein and Bohr to the strange behaviour of entangled particles.</p></div>
-  <div class="hint">SELECT A SCREEN TO PLAY&nbsp;&nbsp; · &nbsp;&nbsp;DRAG TO ROTATE THE WORLD · SCROLL TO MOVE CLOSER</div><section id="settings"><div class="settings-head"><span>LIVE DISCOVERY CONNECTION</span><button id="settings-close">×</button></div><p>Use a YouTube Data API v3 key to search live public videos. Your key stays in this browser.</p><input id="api-key" type="password" placeholder="Paste YouTube Data API v3 key"><div class="settings-actions"><button id="save-key">SAVE CONNECTION</button><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">GET AN API KEY ↗</a></div><small>The platform cannot access YouTube’s private personal recommendation feed. The Construct builds its own transparent discovery ranking from public search results and your local viewing interests.</small></section>
+  <div class="hint">ARROWS TO TRAVEL · CLICK A PANEL TO PLAY · DRAG TO LOOK AROUND</div><div class="loop-counter" id="loop-counter">PENROSE LOOP / 01 OF 24</div><div class="loop-nav" aria-label="Navigate the infinite gallery"><button class="up" id="nav-up" aria-label="Previous level">↑</button><button class="left" id="nav-left" aria-label="Previous panel">←</button><button class="down" id="nav-down" aria-label="Next level">↓</button><button class="right" id="nav-right" aria-label="Next panel">→</button></div><section id="settings"><div class="settings-head"><span>LIVE DISCOVERY CONNECTION</span><button id="settings-close">×</button></div><p>Use a YouTube Data API v3 key to search live public videos. Your key stays in this browser.</p><input id="api-key" type="password" placeholder="Paste YouTube Data API v3 key"><div class="settings-actions"><button id="save-key">SAVE CONNECTION</button><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">GET AN API KEY ↗</a></div><small>The platform cannot access YouTube’s private personal recommendation feed. The Construct builds its own transparent discovery ranking from public search results and your local viewing interests.</small></section>
   <div class="status" id="status">CURATED LIBRARY&nbsp; / &nbsp;00 ITEMS</div>
 </div>
 <div id="focus">
@@ -120,21 +129,32 @@ function clearCards(){cards.forEach(c=>{world.remove(c);c.traverse(o=>{if(o.mate
 function wrapText(ctx,text,x,y,maxWidth,lineHeight){const words=text.split(" ");let line="";for(let n=0;n<words.length;n++){const test=line+words[n]+" ";if(ctx.measureText(test).width>maxWidth&&n>0){ctx.fillText(line,x,y);line=words[n]+" ";y+=lineHeight;}else line=test;}ctx.fillText(line,x,y);}
 function buildCards(){
  clearCards();
+ const total=activeVideos.length,perSide=Math.ceil(total/4),half=15,step=(half*2)/(perSide+1);
  activeVideos.forEach((v,i)=>{
-  const ringIndex=Math.floor(i/12),slot=i%12,angle=(slot/12)*Math.PI*2;
-  const radius=10+ringIndex*7.2;
-  const group=new THREE.Group();
-  group.position.set(Math.sin(angle)*radius,.2+Math.sin(angle*2)*.55,-Math.cos(angle)*radius);
-  group.rotation.y=-angle;
+  const side=Math.floor(i/perSide),slot=i%perSide;
+  let x=0,z=0,y=0,yaw=0;
+  // Four connected corridors form a deliberately impossible, Penrose-inspired loop.
+  if(side===0){x=-half+(slot+1)*step;z=-half;y=0;yaw=0;}
+  else if(side===1){x=half;z=-half+(slot+1)*step;y=2.8;yaw=Math.PI/2;}
+  else if(side===2){x=half-(slot+1)*step;z=half;y=0;yaw=Math.PI;}
+  else{x=-half;z=half-(slot+1)*step;y=-2.8;yaw=-Math.PI/2;}
+  const group=new THREE.Group();group.position.set(x,y,z);group.rotation.y=yaw;
   const mat=new THREE.MeshBasicMaterial({color:0x1a2730,side:THREE.DoubleSide});
   const screen=new THREE.Mesh(new THREE.PlaneGeometry(cardWidth,cardHeight),mat);screen.userData={video:v,index:i};group.add(screen);
-  const frame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(cardWidth+.14,cardHeight+.14)),new THREE.LineBasicMaterial({color:0x8db8bd,transparent:true,opacity:.65}));frame.position.z=.025;group.add(frame);
+  const frame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(cardWidth+.16,cardHeight+.16)),new THREE.LineBasicMaterial({color:0x8db8bd,transparent:true,opacity:.72}));frame.position.z=.025;group.add(frame);
   const titleCanvas=document.createElement("canvas");titleCanvas.width=512;titleCanvas.height=112;const ctx=titleCanvas.getContext("2d");ctx.fillStyle="#101a22";ctx.fillRect(0,0,512,112);ctx.fillStyle="#9be7e2";ctx.font="15px Arial";ctx.fillText(String(i+1).padStart(2,"0")+" / "+(activeGallery.name||"DISCOVER").toUpperCase(),20,28);ctx.fillStyle="#f2f5f5";ctx.font="21px Arial";wrapText(ctx,v.title,20,65,470,25);
   const labelTex=new THREE.CanvasTexture(titleCanvas);const label=new THREE.Mesh(new THREE.PlaneGeometry(cardWidth,1.05),new THREE.MeshBasicMaterial({map:labelTex,transparent:true,side:THREE.DoubleSide}));label.position.set(0,-1.72,.03);group.add(label);
   textureLoader.load("https://i.ytimg.com/vi/"+v.id+"/hqdefault.jpg",tex=>{tex.encoding=THREE.sRGBEncoding;mat.map=tex;mat.color.setHex(0xffffff);mat.needsUpdate=true;},undefined,()=>{mat.color.setHex(0x23343b);});
   group.userData={video:v,index:i};world.add(group);cards.push(group);
  });
+ // Architectural corner portals make the four discontinuous elevations read as one impossible passage.
+ const portalMat=new THREE.MeshBasicMaterial({color:0x9be7e2,wireframe:true,transparent:true,opacity:.16});
+ [[-half,-half,0],[half,-half,1],[half,half,2],[-half,half,3]].forEach(([x,z,k])=>{
+  const portal=new THREE.Mesh(new THREE.TorusGeometry(2.25,.035,5,48),portalMat);portal.position.set(x,[0,1.4,0,-1.4][k],z);portal.rotation.y=k*Math.PI/2;world.add(portal);cards.push(portal);
+ });
  document.getElementById("status").textContent="LIVE LIBRARY / "+activeVideos.length+" VIDEOS";
+ document.getElementById("loop-counter").textContent="PENROSE LOOP / "+String(Math.min(1,total)||0).padStart(2,"0")+" OF "+String(total).padStart(2,"0");
+ if(total) navigateToPanel(0,false);
 }
 function updateHeading(g){document.getElementById("scene-kicker").textContent=(g.dynamic?"LIVE DISCOVERY / ":"ENVIRONMENT / ")+(g.name||"EXPLORE").toUpperCase();document.getElementById("scene-title").textContent=g.title||g.name;document.getElementById("scene-description").textContent=g.description||"A live collection assembled around your subject.";}
 function buildNav(){
@@ -179,9 +199,28 @@ async function loadGallery(g){activeGallery=g;buildNav();updateHeading(g);docume
  if(g.videos?.length){activeVideos=[...g.videos];buildCards();return;}
  await discover(g.query,{addCategory:false});
 }
+
+let currentPanelIndex=0;
+function navigateToPanel(index,animateMove=true){
+ if(!activeVideos.length)return;
+ const total=activeVideos.length;currentPanelIndex=((index%total)+total)%total;
+ const targetCard=cards.find(c=>c.userData?.video?.id===activeVideos[currentPanelIndex].id);
+ if(!targetCard)return;
+ const normal=new THREE.Vector3(0,0,1).applyQuaternion(targetCard.quaternion).normalize();
+ const destination=targetCard.position.clone().add(normal.clone().multiplyScalar(8.2));destination.y+=1.15;
+ const lookAt=targetCard.position.clone();lookAt.y+=.05;
+ document.getElementById("loop-counter").textContent="PENROSE LOOP / "+String(currentPanelIndex+1).padStart(2,"0")+" OF "+String(total).padStart(2,"0")+" · "+activeGallery.name.toUpperCase();
+ if(!animateMove){camera.position.copy(destination);controls.target.copy(lookAt);controls.update();return;}
+ new TWEEN.Tween(camera.position).to({x:destination.x,y:destination.y,z:destination.z},760).easing(TWEEN.Easing.Cubic.InOut).start();
+ new TWEEN.Tween(controls.target).to({x:lookAt.x,y:lookAt.y,z:lookAt.z},760).easing(TWEEN.Easing.Cubic.InOut).start();
+}
+function movePanel(delta){navigateToPanel(currentPanelIndex+delta);}
+function moveLevel(delta){movePanel(delta* Math.max(1,Math.ceil(activeVideos.length/4)));}
+
 function openFocus(video){selectedVideo=video;focusOpen=true;document.getElementById("focus").classList.add("open");document.getElementById("focus-title").textContent=video.title;document.getElementById("focus-meta").textContent=video.creator+" / "+activeGallery.name;document.getElementById("focus-description").textContent=video.description||"Explore this video and follow the related ideas in its gallery.";watchHistory.push({id:video.id,tags:video.tags||[],title:video.title,at:Date.now()});watchHistory=watchHistory.slice(-100);localStorage.setItem("construct_watch_history",JSON.stringify(watchHistory));if(playerReady&&player)player.loadVideoById(video.id);else window.pendingVideo=video.id;}
 function closeFocus(){focusOpen=false;document.getElementById("focus").classList.remove("open");if(player&&player.pauseVideo)player.pauseVideo();}
 function nextVideo(){if(!selectedVideo||!activeVideos.length)return;const idx=activeVideos.findIndex(v=>v.id===selectedVideo.id);openFocus(activeVideos[(idx+1)%activeVideos.length]);}
+document.getElementById("nav-left").addEventListener("click",()=>movePanel(-1));document.getElementById("nav-right").addEventListener("click",()=>movePanel(1));document.getElementById("nav-up").addEventListener("click",()=>moveLevel(-1));document.getElementById("nav-down").addEventListener("click",()=>moveLevel(1));
 document.getElementById("close-focus").addEventListener("click",closeFocus);document.getElementById("back-gallery").addEventListener("click",closeFocus);document.getElementById("next-video").addEventListener("click",nextVideo);
 document.getElementById("open-youtube").addEventListener("click",()=>{if(selectedVideo)window.open("https://www.youtube.com/watch?v="+selectedVideo.id,"_blank","noopener");});
 document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter")discover(e.target.value);});
@@ -193,13 +232,13 @@ function enterSearch(){const q=document.getElementById("search").value.trim();if
 document.getElementById("search").addEventListener("change",enterSearch);
 let pointerDown=null,pointerDragged=false;renderer.domElement.addEventListener("pointerdown",e=>{pointerDown={x:e.clientX,y:e.clientY};pointerDragged=false;});renderer.domElement.addEventListener("pointermove",e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;if(pointerDown&&Math.hypot(e.clientX-pointerDown.x,e.clientY-pointerDown.y)>6)pointerDragged=true;});
 renderer.domElement.addEventListener("click",()=>{if(focusOpen||pointerDragged){pointerDragged=false;pointerDown=null;return;}pointerDown=null;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);if(hits.length){let obj=hits[0].object;while(obj&&!obj.userData.video)obj=obj.parent;if(obj?.userData.video)openFocus(obj.userData.video);}});
-function animate(){requestAnimationFrame(animate);controls.update();raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered)hovered.scale.set(1.035,1.035,1.035);renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
+function animate(){requestAnimationFrame(animate);controls.update();TWEEN.update();raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered)hovered.scale.set(1.035,1.035,1.035);renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
 window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
 const yt=document.createElement("script");yt.src="https://www.youtube.com/iframe_api";document.head.appendChild(yt);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enableRotate=true;controls.enableZoom=true;controls.enablePan=true;controls.minDistance=5;controls.maxDistance=52;controls.minPolarAngle=.12;controls.maxPolarAngle=Math.PI-.12;controls.target.set(0,0,0);controls.rotateSpeed=.62;controls.zoomSpeed=.85;controls.panSpeed=.65;controls.update();
 buildNav();updateHeading(activeGallery);buildCards();setStatus(apiKey?"YOUTUBE API CONNECTED — LOADING YOUR FIRST GALLERY":"CONNECT API KEY FOR LIVE YOUTUBE SEARCH");animate();if(apiKey)discover(activeGallery.query);
 window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(focusOpen)closeFocus();document.getElementById("settings").classList.remove("open");}});
+document.addEventListener("keydown",e=>{if(!focusOpen&&!document.getElementById("settings").classList.contains("open")){if(e.key==="ArrowRight")movePanel(1);if(e.key==="ArrowLeft")movePanel(-1);if(e.key==="ArrowUp")moveLevel(-1);if(e.key==="ArrowDown")moveLevel(1);}if(e.key==="Escape"){if(focusOpen)closeFocus();document.getElementById("settings").classList.remove("open");}});
 
 </script>
 </body>
