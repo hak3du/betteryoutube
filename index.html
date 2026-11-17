@@ -79,25 +79,25 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 @media(max-width:760px){#hover-preview{display:none}}
 
 /* Central six-sided video pavilion */
-#video-pavilion{position:fixed;inset:0;z-index:10;display:grid;place-items:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s}
+#video-pavilion{position:fixed;inset:0;z-index:3;display:grid;place-items:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s}
 #video-pavilion.active{opacity:1;visibility:visible}
-#video-pavilion:before{content:"";position:absolute;width:min(76vmin,900px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(3,8,12,.06),rgba(3,8,12,.72) 68%,transparent 72%);filter:blur(12px)}
-.pavilion-stage{width:min(48vmin,620px);height:min(48vmin,620px);perspective:1300px;position:relative;z-index:1}
+#video-pavilion:before{content:"";position:absolute;width:min(88vmin,1100px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(3,8,12,.06),rgba(3,8,12,.72) 68%,transparent 72%);filter:blur(12px)}
+.pavilion-stage{width:min(58vmin,760px);height:min(58vmin,760px);perspective:1300px;position:relative;z-index:1}
 .pavilion-cube{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(28deg);animation:pavilionTurn 38s linear infinite;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
 .pavilion-face{position:absolute;inset:0;overflow:hidden;background:#05090d;border:1px solid rgba(155,231,226,.72);box-shadow:inset 0 0 36px rgba(95,218,211,.12),0 0 28px rgba(95,218,211,.13);backface-visibility:visible}
 .pavilion-face iframe{width:100%;height:100%;border:0;display:block;pointer-events:none}
-.pavilion-face.front{transform:translateZ(min(24vmin,310px))}
-.pavilion-face.back{transform:rotateY(180deg) translateZ(calc(min(48vmin,620px)/2))}
+.pavilion-face.front{transform:translateZ(min(29vmin,380px))}
+.pavilion-face.back{transform:rotateY(180deg) translateZ(calc(min(58vmin,760px)/2))}
 .pavilion-face.right{transform:rotateY(90deg) translateZ(calc(min(48vmin,620px)/2))}
 .pavilion-face.left{transform:rotateY(-90deg) translateZ(calc(min(48vmin,620px)/2))}
 .pavilion-face.top{transform:rotateX(90deg) translateZ(calc(min(48vmin,620px)/2))}
 .pavilion-face.bottom{transform:rotateX(-90deg) translateZ(calc(min(48vmin,620px)/2))}
-.pavilion-caption{position:absolute;z-index:3;left:50%;bottom:calc(50% - min(31vmin,390px));transform:translateX(-50%);padding:9px 15px;background:rgba(4,9,13,.84);border:1px solid rgba(155,231,226,.32);color:#dffafa;font-size:9px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;max-width:80vw;overflow:hidden;text-overflow:ellipsis}
+.pavilion-caption{position:absolute;z-index:3;left:50%;bottom:calc(50% - min(37vmin,470px));transform:translateX(-50%);padding:9px 15px;background:rgba(4,9,13,.84);border:1px solid rgba(155,231,226,.32);color:#dffafa;font-size:9px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;max-width:80vw;overflow:hidden;text-overflow:ellipsis}
 #canvas-container.pavilion-dim{filter:brightness(.23) saturate(.65);transition:filter .45s}
 #ui.pavilion-dim{opacity:.28;transition:opacity .45s}
 @keyframes pavilionTurn{from{transform:rotateX(-18deg) rotateY(0deg)}to{transform:rotateX(342deg) rotateY(360deg)}}
 @media(prefers-reduced-motion:reduce){.pavilion-cube{animation:none}}
-@media(max-width:760px){.pavilion-stage{width:76vw;height:76vw}.pavilion-face.front{transform:translateZ(38vw)}.pavilion-face.back{transform:rotateY(180deg) translateZ(38vw)}.pavilion-face.right{transform:rotateY(90deg) translateZ(38vw)}.pavilion-face.left{transform:rotateY(-90deg) translateZ(38vw)}.pavilion-face.top{transform:rotateX(90deg) translateZ(38vw)}.pavilion-face.bottom{transform:rotateX(-90deg) translateZ(38vw)}.pavilion-caption{bottom:calc(50% - 48vw);font-size:7px}}
+@media(max-width:760px){.pavilion-stage{width:82vw;height:82vw}.pavilion-face.front{transform:translateZ(41vw)}.pavilion-face.back{transform:rotateY(180deg) translateZ(41vw)}.pavilion-face.right{transform:rotateY(90deg) translateZ(38vw)}.pavilion-face.left{transform:rotateY(-90deg) translateZ(38vw)}.pavilion-face.top{transform:rotateX(90deg) translateZ(38vw)}.pavilion-face.bottom{transform:rotateX(-90deg) translateZ(38vw)}.pavilion-caption{bottom:calc(50% - 52vw);font-size:7px}}
 
 </style>
 </head>
@@ -196,7 +196,7 @@ function buildCards(){
  for(let layer=0;layer<Math.ceil(total/12);layer++){const radius=Math.max(8,15-layer*1.6),y=layer*5.4;[[-radius,-radius,0],[radius,-radius,1],[radius,radius,2],[-radius,radius,3]].forEach(([x,z,k])=>{const portal=new THREE.Mesh(new THREE.TorusGeometry(2.05,.035,5,48),portalMat);portal.position.set(x,y,z);portal.rotation.y=k*Math.PI/2;world.add(portal);cards.push(portal);});}
  document.getElementById("status").textContent="LIVE LIBRARY / "+displayVideos.length+" VIDEOS · SCROLL TO UNFOLD +24";
  document.getElementById("loop-counter").textContent="PENROSE LOOP / "+String(Math.min(1,total)||0).padStart(2,"0")+" OF "+String(total).padStart(2,"0");
- if(total) navigateToPanel(Math.min(currentPanelIndex,total-1),false);
+ if(total){navigateToPanel(Math.min(currentPanelIndex,total-1),false);const initial=displayVideos[Math.min(currentPanelIndex,total-1)];setPavilionVideo(initial);pavilion.classList.add("active");pavilion.setAttribute("aria-hidden","false");}
 }
 function updateHeading(g){document.getElementById("scene-kicker").textContent=(g.dynamic?"LIVE DISCOVERY / ":"ENVIRONMENT / ")+(g.name||"EXPLORE").toUpperCase();document.getElementById("scene-title").textContent=g.title||g.name;document.getElementById("scene-description").textContent=g.description||"A live collection assembled around your subject.";}
 function buildNav(){
@@ -295,18 +295,14 @@ function setPavilionVideo(video){
  });
 }
 function hidePreview(){
- clearTimeout(previewTimer);pavilion.classList.remove("active");
- document.getElementById("canvas-container").classList.remove("pavilion-dim");
- document.getElementById("ui").classList.remove("pavilion-dim");
- pavilion.setAttribute("aria-hidden","true");pavilionPointer=null;
+ clearTimeout(previewTimer);pavilionPointer=null;
 }
 function showPreview(card){
  const video=card?.userData?.video;if(!video)return;
  setPavilionVideo(video);pavilion.classList.add("active");pavilion.setAttribute("aria-hidden","false");
- document.getElementById("canvas-container").classList.add("pavilion-dim");
- document.getElementById("ui").classList.add("pavilion-dim");
+ pavilionPointer=card;
 }
-function animate(){requestAnimationFrame(animate);controls.update();TWEEN.update();cards.forEach(card=>{if(!card.userData?.video)return;const distance=Math.abs(card.position.y-controls.target.y);const fade=THREE.MathUtils.clamp(1-distance/7.2,0,1);card.traverse(part=>{if(part.material){part.material.transparent=true;part.material.opacity=fade;}});});raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered){hovered.scale.set(1.045,1.045,1.045);showPreview(hovered);}else hidePreview();renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
+function animate(){requestAnimationFrame(animate);controls.update();TWEEN.update();cards.forEach(card=>{if(!card.userData?.video)return;const distance=Math.abs(card.position.y-controls.target.y);const baseFade=THREE.MathUtils.clamp(1-distance/7.2,0,1);const fade=card===hovered?baseFade*.08:baseFade;card.traverse(part=>{if(part.material){part.material.transparent=true;part.material.opacity=fade;}});});raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered){hovered.scale.set(1.045,1.045,1.045);showPreview(hovered);}else hidePreview();renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
 window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
 const yt=document.createElement("script");yt.src="https://www.youtube.com/iframe_api";document.head.appendChild(yt);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enableRotate=true;controls.enableZoom=true;controls.enablePan=true;controls.minDistance=5;controls.maxDistance=52;controls.minPolarAngle=.12;controls.maxPolarAngle=Math.PI-.12;controls.target.set(0,0,0);controls.rotateSpeed=.62;controls.zoomSpeed=.85;controls.panSpeed=.65;controls.update();
