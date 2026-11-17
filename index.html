@@ -85,7 +85,7 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 .pavilion-stage{width:min(48vmin,620px);height:min(48vmin,620px);perspective:1300px;position:relative;z-index:1}
 .pavilion-cube{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(28deg);animation:pavilionTurn 38s linear infinite;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
 .pavilion-face{position:absolute;inset:0;overflow:hidden;background:#05090d;border:1px solid rgba(155,231,226,.72);box-shadow:inset 0 0 36px rgba(95,218,211,.12),0 0 28px rgba(95,218,211,.13);backface-visibility:visible}
-.pavilion-face iframe{width:100%;height:100%;border:0;display:block;pointer-events:auto}
+.pavilion-face iframe{width:100%;height:100%;border:0;display:block;pointer-events:none}
 .pavilion-face.front{transform:translateZ(min(24vmin,310px))}
 .pavilion-face.back{transform:rotateY(180deg) translateZ(calc(min(48vmin,620px)/2))}
 .pavilion-face.right{transform:rotateY(90deg) translateZ(calc(min(48vmin,620px)/2))}
@@ -276,7 +276,7 @@ document.getElementById("save-key").addEventListener("click",()=>{apiKey=documen
 function enterSearch(){const q=document.getElementById("search").value.trim();if(q)discover(q);}
 document.getElementById("search").addEventListener("change",enterSearch);
 let pointerDown=null,pointerDragged=false;renderer.domElement.addEventListener("pointerdown",e=>{pointerDown={x:e.clientX,y:e.clientY};pointerDragged=false;});renderer.domElement.addEventListener("pointermove",e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;if(pointerDown&&Math.hypot(e.clientX-pointerDown.x,e.clientY-pointerDown.y)>6)pointerDragged=true;});
-let wheelLocked=false;renderer.domElement.addEventListener("wheel",e=>{e.preventDefault();if(wheelLocked)return;wheelLocked=true;moveLevel(e.deltaY>0?1:-1).finally(()=>setTimeout(()=>wheelLocked=false,850));hidePreview();},{passive:false});
+let wheelLocked=false;renderer.domElement.addEventListener("wheel",e=>{e.preventDefault();if(wheelLocked)return;wheelLocked=true;moveLevel(e.deltaY>0?1:-1).finally(()=>setTimeout(()=>wheelLocked=false,850));},{passive:false});
 renderer.domElement.addEventListener("pointerleave",hidePreview);renderer.domElement.addEventListener("click",()=>{hidePreview();if(focusOpen||pointerDragged){pointerDragged=false;pointerDown=null;return;}pointerDown=null;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);if(hits.length){let obj=hits[0].object;while(obj&&!obj.userData.video)obj=obj.parent;if(obj?.userData.video)openFocus(obj.userData.video);}});
 
 const pavilion=document.getElementById("video-pavilion"),pavilionCube=document.getElementById("pavilion-cube"),pavilionFaces=[...document.querySelectorAll(".pavilion-face")],pavilionCaption=document.getElementById("pavilion-caption");
