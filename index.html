@@ -122,7 +122,7 @@ const starterTopics=[
  {id:"philosophy",name:"Philosophy",query:"philosophy ideas reality knowledge documentary",title:"The Thinking Room",description:"Ideas about knowledge, reality, ethics and the questions that keep us thinking."}
 ];
 let galleries=starterTopics.map(x=>({...x,videos:[],dynamic:false}));
-let activeGallery=galleries[0],activeVideos=[],cards=[],selectedVideo=null,player=null,playerReady=false,focusOpen=false,apiKey=localStorage.getItem("construct_youtube_api_key")||"",watchHistory=JSON.parse(localStorage.getItem("construct_watch_history")||"[]"),searchSequence=0;
+let activeGallery=galleries[0],activeVideos=[],displayVideos=[],rotationOffset=0,rotationTimer=null,cards=[],selectedVideo=null,player=null,playerReady=false,focusOpen=false,apiKey=localStorage.getItem("construct_youtube_api_key")||"",watchHistory=JSON.parse(localStorage.getItem("construct_watch_history")||"[]"),searchSequence=0;
 const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x080c12,.012);
 const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,220);camera.position.set(0,1.4,13);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputEncoding=THREE.sRGBEncoding;document.getElementById("canvas-container").appendChild(renderer.domElement);
@@ -143,8 +143,8 @@ function clearCards(){cards.forEach(c=>{world.remove(c);c.traverse(o=>{if(o.mate
 function wrapText(ctx,text,x,y,maxWidth,lineHeight){const words=text.split(" ");let line="";for(let n=0;n<words.length;n++){const test=line+words[n]+" ";if(ctx.measureText(test).width>maxWidth&&n>0){ctx.fillText(line,x,y);line=words[n]+" ";y+=lineHeight;}else line=test;}ctx.fillText(line,x,y);}
 function buildCards(){
  clearCards();
- const total=activeVideos.length,perSide=Math.ceil(total/4),half=15,step=(half*2)/(perSide+1);
- activeVideos.forEach((v,i)=>{
+ const total=displayVideos.length,perSide=Math.ceil(total/4),half=15,step=(half*2)/(perSide+1);
+ displayVideos.forEach((v,i)=>{
   const side=Math.floor(i/perSide),slot=i%perSide;
   let x=0,z=0,y=0,yaw=0;
   // Four connected corridors form a deliberately impossible, Penrose-inspired loop.
@@ -166,7 +166,7 @@ function buildCards(){
  [[-half,-half,0],[half,-half,1],[half,half,2],[-half,half,3]].forEach(([x,z,k])=>{
   const portal=new THREE.Mesh(new THREE.TorusGeometry(2.25,.035,5,48),portalMat);portal.position.set(x,[0,1.4,0,-1.4][k],z);portal.rotation.y=k*Math.PI/2;world.add(portal);cards.push(portal);
  });
- document.getElementById("status").textContent="LIVE LIBRARY / "+activeVideos.length+" VIDEOS";
+ document.getElementById("status").textContent="LIVE LIBRARY / "+displayVideos.length+" OF "+activeVideos.length+" VIDEOS · ROTATES EVERY 1.61 MIN";
  document.getElementById("loop-counter").textContent="PENROSE LOOP / "+String(Math.min(1,total)||0).padStart(2,"0")+" OF "+String(total).padStart(2,"0");
  if(total) navigateToPanel(0,false);
 }
@@ -205,20 +205,20 @@ async function discover(query,{addCategory=true}={}){
   const id="live-"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,30);
   let gallery=galleries.find(g=>g.id===id);
   if(!gallery){gallery={id,name:q.length>22?q.slice(0,21)+"…":q,title:q.charAt(0).toUpperCase()+q.slice(1),description:"A live YouTube collection ranked by subject relevance, freshness and your local viewing interests.",query:q,intro:"LIVE DISCOVERY / "+q.toUpperCase(),videos:[],dynamic:true};galleries.push(gallery);}
-  gallery.videos=ranked;gallery.query=q;gallery.dynamic=true;activeGallery=gallery;activeVideos=ranked;
-  buildNav();updateHeading(gallery);buildCards();setStatus("LIVE RESULTS / "+ranked.length+" VIDEOS / RELEVANCE RANKED");
+  gallery.videos=ranked;gallery.query=q;gallery.dynamic=true;activeGallery=gallery;activeVideos=ranked;rotationOffset=0;displayVideos=activeVideos.slice(0,Math.min(12,activeVideos.length));
+  buildNav();updateHeading(gallery);buildCards();startGalleryRotation();setStatus("LIVE RESULTS / "+ranked.length+" VIDEOS / ROTATES EVERY 1.61 MIN");
  }catch(error){console.error(error);setStatus("YOUTUBE CONNECTION NEEDS ATTENTION");toast(error.message+" Check the API key and YouTube Data API access.");}
 }
 async function loadGallery(g){activeGallery=g;buildNav();updateHeading(g);document.getElementById("search").value="";
- if(g.videos?.length){activeVideos=[...g.videos];buildCards();return;}
+ if(g.videos?.length){activeVideos=[...g.videos];rotationOffset=0;displayVideos=activeVideos.slice(0,Math.min(12,activeVideos.length));buildCards();startGalleryRotation();return;}
  await discover(g.query,{addCategory:false});
 }
 
 let currentPanelIndex=0;
 function navigateToPanel(index,animateMove=true){
- if(!activeVideos.length)return;
- const total=activeVideos.length;currentPanelIndex=((index%total)+total)%total;
- const targetCard=cards.find(c=>c.userData?.video?.id===activeVideos[currentPanelIndex].id);
+ if(!displayVideos.length)return;
+ const total=displayVideos.length;currentPanelIndex=((index%total)+total)%total;
+ const targetCard=cards.find(c=>c.userData?.video?.id===displayVideos[currentPanelIndex].id);
  if(!targetCard)return;
  const normal=new THREE.Vector3(0,0,1).applyQuaternion(targetCard.quaternion).normalize();
  const destination=targetCard.position.clone().add(normal.clone().multiplyScalar(8.2));destination.y+=1.15;
@@ -229,7 +229,8 @@ function navigateToPanel(index,animateMove=true){
  new TWEEN.Tween(controls.target).to({x:lookAt.x,y:lookAt.y,z:lookAt.z},760).easing(TWEEN.Easing.Cubic.InOut).start();
 }
 function movePanel(delta){navigateToPanel(currentPanelIndex+delta);}
-function moveLevel(delta){movePanel(delta* Math.max(1,Math.ceil(activeVideos.length/4)));}
+function moveLevel(delta){movePanel(delta* Math.max(1,Math.ceil(displayVideos.length/4)));}
+function startGalleryRotation(){clearInterval(rotationTimer);if(activeVideos.length<=12)return;rotationTimer=setInterval(()=>{if(focusOpen)return;rotationOffset=(rotationOffset+12)%activeVideos.length;displayVideos=Array.from({length:Math.min(12,activeVideos.length)},(_,i)=>activeVideos[(rotationOffset+i)%activeVideos.length]);currentPanelIndex=0;buildCards();toast("The gallery has unfolded a new set of videos.");},96600);}
 
 function openFocus(video){selectedVideo=video;focusOpen=true;document.getElementById("focus").classList.add("open");document.getElementById("focus-title").textContent=video.title;document.getElementById("focus-meta").textContent=video.creator+" / "+activeGallery.name;document.getElementById("focus-description").textContent=video.description||"Explore this video and follow the related ideas in its gallery.";watchHistory.push({id:video.id,tags:video.tags||[],title:video.title,at:Date.now()});watchHistory=watchHistory.slice(-100);localStorage.setItem("construct_watch_history",JSON.stringify(watchHistory));if(playerReady&&player)player.loadVideoById(video.id);else window.pendingVideo=video.id;}
 function closeFocus(){focusOpen=false;document.getElementById("focus").classList.remove("open");if(player&&player.pauseVideo)player.pauseVideo();}
