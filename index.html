@@ -40,6 +40,20 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 .close-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.close{border:0;background:none;color:#9caab3;font-size:22px;cursor:pointer;padding:4px 8px}.close:hover{color:white}
 #toast{position:absolute;left:50%;bottom:75px;transform:translateX(-50%);padding:10px 15px;background:#101820;border:1px solid var(--line);color:#c6d2d8;font-size:10px;letter-spacing:.6px;opacity:0;transition:.25s;pointer-events:none;z-index:20}#toast.show{opacity:1}
 @media(max-width:760px){.topbar{padding:16px}.top-meta{display:none}.rail{left:12px;top:84px;bottom:auto;width:auto;right:12px;flex-direction:row;overflow-x:auto;gap:5px}.rail-label,.rail-bottom{display:none}.category{flex:0 0 auto;height:36px;padding:0 10px;font-size:9px}.category .dot{display:none}.search-wrap{top:137px;width:calc(100% - 32px)}.scene-heading{left:18px;top:194px}.scene-heading h1{font-size:27px}.scene-heading p{max-width:260px;line-height:1.5}.hint{bottom:15px;font-size:8px}.status{display:none}.focus-shell{height:94vh;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:10px}.focus-side{display:grid;grid-template-columns:1fr 1fr}.side-panel{padding:12px}.side-panel:nth-child(2){display:none}.player-frame{min-height:220px}.video-details h2{font-size:16px}}
+
+.settings-toggle{position:absolute;right:28px;top:101px;pointer-events:auto;border:1px solid rgba(155,231,226,.35);background:rgba(8,12,17,.72);color:#9be7e2;padding:11px 14px;font-size:9px;letter-spacing:1.5px;cursor:pointer}
+#search-state{font-size:8px;letter-spacing:1px;color:#74838d;margin:8px 0 0 3px;text-transform:uppercase}
+#settings{display:none;position:absolute;z-index:15;right:28px;top:145px;width:min(380px,calc(100vw - 40px));padding:20px;background:rgba(8,13,19,.97);border:1px solid rgba(155,231,226,.32);box-shadow:0 24px 70px #000;pointer-events:auto}
+#settings.open{display:block}.settings-head{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:2px;color:#9be7e2}
+#settings-close{background:none;border:0;color:#aab7be;font-size:22px;cursor:pointer}
+#settings p,#settings small{display:block;color:#9aa8b1;font-size:11px;line-height:1.65}
+#api-key{width:100%;padding:13px;background:#0c141b;border:1px solid rgba(190,210,220,.22);color:white;outline:none}
+.settings-actions{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:12px}
+.settings-actions button{background:rgba(155,231,226,.12);border:1px solid rgba(155,231,226,.5);color:#9be7e2;padding:11px;font-size:9px;letter-spacing:1px;cursor:pointer}
+.settings-actions a{color:#9be7e2;font-size:9px;text-decoration:none;letter-spacing:1px}
+#settings small{margin-top:15px;color:#73828c}
+.category{flex-shrink:0}
+@media(max-width:760px){.settings-toggle{right:16px;top:190px;padding:9px}.search-wrap{top:137px}.scene-heading{top:245px}.rail{top:84px}.settings-toggle{top:188px}}
 </style>
 </head>
 <body>
@@ -50,9 +64,9 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
     <div class="top-meta">DISCOVER WITH INTENTION&nbsp;&nbsp; / &nbsp;&nbsp;01—05</div>
   </header>
   <nav class="rail" id="categories"><div class="rail-label">Explore environments</div></nav>
-  <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" placeholder="SEARCH A SUBJECT, IDEA OR CREATOR" autocomplete="off"></div>
+  <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" placeholder="SEARCH YOUTUBE — PRESS ENTER TO EXPLORE" autocomplete="off"><div id="search-state">ADD A YOUTUBE DATA API KEY TO LOAD LIVE RESULTS</div></div><button id="settings-toggle" class="settings-toggle">CONNECT YOUTUBE API</button>
   <div class="scene-heading"><div class="eyebrow" id="scene-kicker">ENVIRONMENT 01 / THE QUANTUM GALLERY</div><h1 id="scene-title">The Quantum Gallery</h1><p id="scene-description">From the arguments of Einstein and Bohr to the strange behaviour of entangled particles.</p></div>
-  <div class="hint">SELECT A SCREEN TO ENTER&nbsp;&nbsp; · &nbsp;&nbsp;DRAG TO LOOK AROUND</div>
+  <div class="hint">SELECT A SCREEN TO PLAY&nbsp;&nbsp; · &nbsp;&nbsp;DRAG TO ROTATE THE WORLD · SCROLL TO MOVE CLOSER</div><section id="settings"><div class="settings-head"><span>LIVE DISCOVERY CONNECTION</span><button id="settings-close">×</button></div><p>Use a YouTube Data API v3 key to search live public videos. Your key stays in this browser.</p><input id="api-key" type="password" placeholder="Paste YouTube Data API v3 key"><div class="settings-actions"><button id="save-key">SAVE CONNECTION</button><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">GET AN API KEY ↗</a></div><small>The platform cannot access YouTube’s private personal recommendation feed. The Construct builds its own transparent discovery ranking from public search results and your local viewing interests.</small></section>
   <div class="status" id="status">CURATED LIBRARY&nbsp; / &nbsp;00 ITEMS</div>
 </div>
 <div id="focus">
@@ -73,87 +87,120 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 </div>
 <div id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 <script>
-const galleries = [
- {id:"quantum",name:"Quantum Physics",title:"The Quantum Gallery",description:"From the arguments of Einstein and Bohr to the strange behaviour of entangled particles.",intro:"ENVIRONMENT 01 / THE QUANTUM GALLERY",videos:[
-  {id:"068rdc75mHM",title:"Einstein's Quantum Riddle",creator:"NOVA PBS",description:"A full documentary following the experiments that tested quantum entanglement and Einstein's doubts about spooky action at a distance.",tags:["Einstein","entanglement","quantum","PBS","physics"]},
-  {id:"ISdBAf-ysI0",title:"Einstein vs Bohr: The Secrets Behind Quantum Physics",creator:"Spark",description:"Jim Al-Khalili traces the debate that shaped quantum physics, from the uncertainty principle to the question of what reality means.",tags:["Einstein","Bohr","history","quantum mechanics"]},
-  {id:"W2Xb2GFK2yc",title:"A Better Way to Picture Atoms",creator:"Science education",description:"A visual explanation that helps build a more useful mental model of atomic structure.",tags:["atoms","visualisation","physics"]},
-  {id:"tQSbms5MDvY",title:"Planck's Constant and the Origin of Quantum Mechanics",creator:"Physics education",description:"A lesson on the constant that helped launch quantum theory and change our understanding of energy.",tags:["Planck","quantum theory","history","physics"]},
-  {id:"UjaAxUO6-Uw",title:"Schrödinger's Cat",creator:"Science education",description:"The famous thought experiment used to explore superposition and the limits of classical intuition.",tags:["Schrodinger","superposition","quantum"]}
- ]},
- {id:"nature",name:"Nature",title:"The Living World",description:"A window into extraordinary ecosystems, animal behaviour and the patterns of the natural world.",intro:"ENVIRONMENT 02 / THE LIVING WORLD",videos:[
-  {id:"7ZhdXgRfxHI",title:"Incredible 4K Nature Scenes Narrated by David Attenborough",creator:"BBC Earth",description:"A collection of remarkable natural-history sequences, from animal adaptations to extraordinary encounters in the wild.",tags:["nature","wildlife","Attenborough","documentary","4K"]},
-  {id:"R-1c2xGajXc",title:"Extraordinary Nature Scenes in 4K",creator:"BBC Earth",description:"Explore habitats and the remarkable adaptations that allow animals to survive in very different environments.",tags:["nature","wildlife","habitats","BBC Earth"]},
-  {id:"fCn8ts9KXsQ",title:"Primitive Technology: Hut",creator:"Primitive Technology",description:"A quiet, process-led look at building with natural materials and understanding practical craft.",tags:["nature","craft","building","outdoors"]}
- ]},
- {id:"engineering",name:"Engineering",title:"The Engine Room",description:"Mechanisms, infrastructure and the ingenuity behind the systems we depend on.",intro:"ENVIRONMENT 03 / THE ENGINE ROOM",videos:[
-  {id:"9_QsCLYs2mY",title:"How a Mechanical Watch Works",creator:"Animagraffs",description:"A detailed 3D breakdown of the crown, mainspring, gear train, escapement and balance wheel inside a mechanical watch.",tags:["engineering","mechanical","3D","design","watch"]},
-  {id:"yQqAG7uHdLM",title:"Inside Google's Data Center",creator:"Google",description:"A look inside the infrastructure, hardware and operational systems behind large-scale data centres.",tags:["engineering","technology","infrastructure","computing"]},
-  {id:"8KpS2bANm00",title:"Making a Samurai Sword",creator:"Discovery",description:"A craft and materials-focused look at the demanding process behind traditional sword making.",tags:["engineering","materials","craft","manufacturing"]}
- ]},
- {id:"history",name:"History",title:"The Human Story",description:"Civilisations, inventions and the people whose decisions changed the direction of history.",intro:"ENVIRONMENT 04 / THE HUMAN STORY",videos:[
-  {id:"WltJPKFo_J4",title:"The Ancient World: The First Civilizations",creator:"The History of the World",description:"A documentary journey through the emergence of early civilisations, from ancient Egypt to the Persian Empire.",tags:["history","ancient","civilisation","Egypt","Persia"]},
-  {id:"g-CcEtbqbbw",title:"The Internet's Own Boy",creator:"PBS",description:"The story of Aaron Swartz, open access, technology and the public-interest questions surrounding the internet.",tags:["history","technology","internet","documentary"]}
- ]},
- {id:"philosophy",name:"Philosophy",title:"The Thinking Room",description:"Ideas about knowledge, reality, ethics and the questions that keep human beings thinking.",intro:"ENVIRONMENT 05 / THE THINKING ROOM",videos:[
-  {id:"QAo2D3nR-tY",title:"Plato's Allegory of the Cave",creator:"CrashCourse",description:"A guided introduction to Plato's thought experiment about perception, knowledge and the difference between appearance and reality.",tags:["philosophy","Plato","knowledge","reality"]},
-  {id:"Bqq1QkqZCrI",title:"The Physics of Time",creator:"Veritasium",description:"An exploration of time and the questions physics raises about how we experience the universe.",tags:["philosophy","physics","time","science"]}
- ]}
+
+const starterTopics=[
+ {id:"quantum",name:"Quantum Physics",query:"quantum physics explained documentary Einstein Bohr",title:"The Quantum Gallery",description:"Quantum mechanics, the people who shaped it and the experiments changing our picture of reality."},
+ {id:"nature",name:"Nature",query:"BBC Earth nature wildlife documentary",title:"The Living World",description:"Extraordinary ecosystems, animal behaviour and the patterns of the natural world."},
+ {id:"engineering",name:"Engineering",query:"engineering inventions how things work documentary",title:"The Engine Room",description:"Mechanisms, infrastructure and the ingenuity behind the systems we depend on."},
+ {id:"history",name:"History",query:"world history civilisation documentary",title:"The Human Story",description:"Civilisations, inventions and the people whose decisions changed history."},
+ {id:"philosophy",name:"Philosophy",query:"philosophy ideas reality knowledge documentary",title:"The Thinking Room",description:"Ideas about knowledge, reality, ethics and the questions that keep us thinking."}
 ];
-let activeGallery = galleries[0], activeVideos = [...activeGallery.videos], cards = [], selectedVideo = null, player = null, playerReady = false, focusOpen = false;
-const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x080c12,.023);
-const camera = new THREE.PerspectiveCamera(53,innerWidth/innerHeight,.1,180); camera.position.set(0,1.2,10);
-const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight); renderer.outputEncoding=THREE.sRGBEncoding; document.getElementById("canvas-container").appendChild(renderer.domElement);
-scene.add(new THREE.AmbientLight(0xb9d2d8,.62));
-const keyLight = new THREE.PointLight(0x9be7e2,1.1,45); keyLight.position.set(-5,5,2); scene.add(keyLight);
-const warmLight = new THREE.PointLight(0xc7a77b,.65,40); warmLight.position.set(7,1,-12); scene.add(warmLight);
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshBasicMaterial({color:0x080c11,transparent:true,opacity:.65})); floor.rotation.x=-Math.PI/2;floor.position.y=-3.2;scene.add(floor);
-const grid = new THREE.GridHelper(180,90,0x26353d,0x15232b);grid.position.y=-3.17;grid.material.transparent=true;grid.material.opacity=.24;scene.add(grid);
-const archMat = new THREE.MeshBasicMaterial({color:0x253942,wireframe:true,transparent:true,opacity:.16});
-for(let z=0;z>-70;z-=12){const arch=new THREE.Mesh(new THREE.TorusGeometry(8,.018,4,90,Math.PI),archMat);arch.position.set(0,0,z);arch.rotation.z=Math.PI;scene.add(arch);}
-const textureLoader = new THREE.TextureLoader(); const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2(9,9); let hovered=null, dragStart=null, isDragging=false;
-const cardWidth=4.65, cardHeight=2.62;
-function clearCards(){cards.forEach(c=>{scene.remove(c);c.traverse(o=>{if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}})});cards=[];}
+let galleries=starterTopics.map(x=>({...x,videos:[],dynamic:false}));
+let activeGallery=galleries[0],activeVideos=[],cards=[],selectedVideo=null,player=null,playerReady=false,focusOpen=false,apiKey=localStorage.getItem("construct_youtube_api_key")||"",watchHistory=JSON.parse(localStorage.getItem("construct_watch_history")||"[]"),searchSequence=0;
+const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x080c12,.012);
+const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,220);camera.position.set(0,1.4,13);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputEncoding=THREE.sRGBEncoding;document.getElementById("canvas-container").appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0xb9d2d8,.7));
+const keyLight=new THREE.PointLight(0x9be7e2,1.4,65);keyLight.position.set(-7,8,5);scene.add(keyLight);
+const warmLight=new THREE.PointLight(0xc7a77b,.9,65);warmLight.position.set(8,2,-12);scene.add(warmLight);
+const world=new THREE.Group();scene.add(world);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(48,96),new THREE.MeshBasicMaterial({color:0x080c11,transparent:true,opacity:.78,side:THREE.DoubleSide}));floor.rotation.x=-Math.PI/2;floor.position.y=-5.2;world.add(floor);
+const grid=new THREE.GridHelper(100,60,0x26353d,0x15232b);grid.position.y=-5.15;grid.material.transparent=true;grid.material.opacity=.22;world.add(grid);
+const archMat=new THREE.MeshBasicMaterial({color:0x38515a,wireframe:true,transparent:true,opacity:.13});
+for(let y=-1;y<=1;y++)for(let radius=17;radius<=37;radius+=10){const ring=new THREE.Mesh(new THREE.TorusGeometry(radius,.018,4,144),archMat);ring.position.y=y*4.5;world.add(ring);}
+const textureLoader=new THREE.TextureLoader(),raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2(9,9);let hovered=null;
+const cardWidth=4.3,cardHeight=2.42;
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),3200);}
+function setStatus(msg){document.getElementById("search-state").textContent=msg;}
+function cleanText(s){return String(s||"").replace(/<[^>]*>/g,"").replace(/&amp;/g,"&").trim();}
+function clearCards(){cards.forEach(c=>{world.remove(c);c.traverse(o=>{if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}})});cards=[];}
+function wrapText(ctx,text,x,y,maxWidth,lineHeight){const words=text.split(" ");let line="";for(let n=0;n<words.length;n++){const test=line+words[n]+" ";if(ctx.measureText(test).width>maxWidth&&n>0){ctx.fillText(line,x,y);line=words[n]+" ";y+=lineHeight;}else line=test;}ctx.fillText(line,x,y);}
 function buildCards(){
  clearCards();
  activeVideos.forEach((v,i)=>{
-  const side=i%2===0?-1:1, row=Math.floor(i/2), z=-row*8.2-2.5;
-  const group=new THREE.Group(); group.position.set(side*2.65, .05+(row%2)*.12,z); group.rotation.y=side<0?.31:-.31; group.rotation.z=side<0?.012:-.012;
-  const geo=new THREE.PlaneGeometry(cardWidth,cardHeight);
+  const ringIndex=Math.floor(i/12),slot=i%12,angle=(slot/12)*Math.PI*2;
+  const radius=10+ringIndex*7.2;
+  const group=new THREE.Group();
+  group.position.set(Math.sin(angle)*radius,.2+Math.sin(angle*2)*.55,-Math.cos(angle)*radius);
+  group.rotation.y=-angle;
   const mat=new THREE.MeshBasicMaterial({color:0x1a2730,side:THREE.DoubleSide});
-  const screen=new THREE.Mesh(geo,mat); screen.userData={video:v,index:i};group.add(screen);
-  const frame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(cardWidth+.12,cardHeight+.12)),new THREE.LineBasicMaterial({color:0x8db8bd,transparent:true,opacity:.58}));frame.position.z=.025;group.add(frame);
-  const glow=new THREE.Mesh(new THREE.PlaneGeometry(cardWidth+.38,cardHeight+.38),new THREE.MeshBasicMaterial({color:0x6aa6aa,transparent:true,opacity:.035,side:THREE.DoubleSide}));glow.position.z=-.035;group.add(glow);
-  const titleCanvas=document.createElement("canvas");titleCanvas.width=512;titleCanvas.height=128;const ctx=titleCanvas.getContext("2d");ctx.fillStyle="#101a22";ctx.fillRect(0,0,512,128);ctx.fillStyle="#9be7e2";ctx.font="16px Arial";ctx.fillText(String(i+1).padStart(2,"0")+" / "+activeGallery.name.toUpperCase(),22,34);ctx.fillStyle="#f2f5f5";ctx.font="22px Arial";wrapText(ctx,v.title,22,72,465,27);const labelTex=new THREE.CanvasTexture(titleCanvas);const label=new THREE.Mesh(new THREE.PlaneGeometry(cardWidth,1.16),new THREE.MeshBasicMaterial({map:labelTex,transparent:true,side:THREE.DoubleSide}));label.position.set(0,-1.9,.03);group.add(label);
+  const screen=new THREE.Mesh(new THREE.PlaneGeometry(cardWidth,cardHeight),mat);screen.userData={video:v,index:i};group.add(screen);
+  const frame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(cardWidth+.14,cardHeight+.14)),new THREE.LineBasicMaterial({color:0x8db8bd,transparent:true,opacity:.65}));frame.position.z=.025;group.add(frame);
+  const titleCanvas=document.createElement("canvas");titleCanvas.width=512;titleCanvas.height=112;const ctx=titleCanvas.getContext("2d");ctx.fillStyle="#101a22";ctx.fillRect(0,0,512,112);ctx.fillStyle="#9be7e2";ctx.font="15px Arial";ctx.fillText(String(i+1).padStart(2,"0")+" / "+(activeGallery.name||"DISCOVER").toUpperCase(),20,28);ctx.fillStyle="#f2f5f5";ctx.font="21px Arial";wrapText(ctx,v.title,20,65,470,25);
+  const labelTex=new THREE.CanvasTexture(titleCanvas);const label=new THREE.Mesh(new THREE.PlaneGeometry(cardWidth,1.05),new THREE.MeshBasicMaterial({map:labelTex,transparent:true,side:THREE.DoubleSide}));label.position.set(0,-1.72,.03);group.add(label);
   textureLoader.load("https://i.ytimg.com/vi/"+v.id+"/hqdefault.jpg",tex=>{tex.encoding=THREE.sRGBEncoding;mat.map=tex;mat.color.setHex(0xffffff);mat.needsUpdate=true;},undefined,()=>{mat.color.setHex(0x23343b);});
-  group.userData={video:v,index:i,screen};scene.add(group);cards.push(group);
+  group.userData={video:v,index:i};world.add(group);cards.push(group);
  });
- document.getElementById("status").textContent="CURATED LIBRARY  /  "+String(activeVideos.length).padStart(2,"0")+" VIDEOS";
+ document.getElementById("status").textContent="LIVE LIBRARY / "+activeVideos.length+" VIDEOS";
 }
-function wrapText(ctx,text,x,y,maxWidth,lineHeight){const words=text.split(" ");let line="";for(let n=0;n<words.length;n++){const test=line+words[n]+" ";if(ctx.measureText(test).width>maxWidth&&n>0){ctx.fillText(line,x,y);line=words[n]+" ";y+=lineHeight;}else line=test;}ctx.fillText(line,x,y);}
-function showGallery(gallery){activeGallery=gallery;activeVideos=[...gallery.videos];document.querySelectorAll(".category").forEach(b=>b.classList.toggle("active",b.dataset.id===gallery.id));document.getElementById("scene-kicker").textContent=gallery.intro;document.getElementById("scene-title").textContent=gallery.title;document.getElementById("scene-description").textContent=gallery.description;document.getElementById("search").value="";buildCards();new TWEEN.Tween(camera.position).to({x:0,y:1.2,z:10},850).easing(TWEEN.Easing.Cubic.Out).start();}
-function buildNav(){const nav=document.getElementById("categories");galleries.forEach((g,i)=>{const b=document.createElement("button");b.className="category"+(i===0?" active":"");b.dataset.id=g.id;b.innerHTML='<span class="dot"></span><span>'+g.name+'</span>';b.addEventListener("click",()=>showGallery(g));nav.appendChild(b);});const foot=document.createElement("div");foot.className="rail-bottom";foot.textContent="FIVE WORLDS. ONE LIBRARY.\\nFOLLOW THE IDEA, NOT THE FEED.";nav.appendChild(foot);}
-function filterVideos(q){const query=q.trim().toLowerCase();activeVideos=query?activeGallery.videos.filter(v=>(v.title+" "+v.creator+" "+v.description+" "+v.tags.join(" ")).toLowerCase().includes(query)):[...activeGallery.videos];buildCards();if(!activeVideos.length)toast("No matches in this gallery. Try another term or environment.");}
-function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2400);}
-function openFocus(video){selectedVideo=video;focusOpen=true;document.getElementById("focus").classList.add("open");document.getElementById("focus-title").textContent=video.title;document.getElementById("focus-meta").textContent=video.creator+"  /  "+activeGallery.name;document.getElementById("focus-description").textContent=video.description;if(playerReady&&player){player.loadVideoById(video.id);}else{window.pendingVideo=video.id;} }
+function updateHeading(g){document.getElementById("scene-kicker").textContent=(g.dynamic?"LIVE DISCOVERY / ":"ENVIRONMENT / ")+(g.name||"EXPLORE").toUpperCase();document.getElementById("scene-title").textContent=g.title||g.name;document.getElementById("scene-description").textContent=g.description||"A live collection assembled around your subject.";}
+function buildNav(){
+ const nav=document.getElementById("categories");nav.innerHTML='<div class="rail-label">Explore environments</div>';
+ galleries.forEach(g=>{const b=document.createElement("button");b.className="category"+(g.id===activeGallery.id?" active":"");b.dataset.id=g.id;b.innerHTML='<span class="dot"></span><span>'+g.name.replace(/[<>]/g,"")+'</span>';b.addEventListener("click",()=>loadGallery(g));nav.appendChild(b);});
+ const foot=document.createElement("div");foot.className="rail-bottom";foot.textContent="LIVE SUBJECT WORLDS.\\nFOLLOW THE IDEA, NOT THE FEED.";nav.appendChild(foot);
+}
+async function youtubeSearch(query){
+ if(!apiKey){document.getElementById("settings").classList.add("open");toast("Connect a YouTube Data API key to load live videos.");return [];}
+ const url=new URL("https://www.googleapis.com/youtube/v3/search");url.search=new URLSearchParams({part:"snippet",type:"video",maxResults:"24",q:query,safeSearch:"moderate",order:"relevance",key:apiKey}).toString();
+ const response=await fetch(url);const data=await response.json();if(!response.ok)throw new Error(data.error?.message||"YouTube search failed");
+ const ids=(data.items||[]).map(x=>x.id?.videoId).filter(Boolean);if(!ids.length)return [];
+ const detailUrl=new URL("https://www.googleapis.com/youtube/v3/videos");detailUrl.search=new URLSearchParams({part:"snippet,contentDetails,statistics",id:ids.join(","),key:apiKey}).toString();
+ const details=await fetch(detailUrl);const detailData=await details.json();if(!details.ok)throw new Error(detailData.error?.message||"Could not load video details");
+ return (detailData.items||[]).map(x=>({id:x.id,title:cleanText(x.snippet.title),creator:cleanText(x.snippet.channelTitle),description:cleanText(x.snippet.description).slice(0,420),tags:x.snippet.tags||[],categoryId:x.snippet.categoryId,views:Number(x.statistics?.viewCount||0),publishedAt:x.snippet.publishedAt,thumbnail:x.snippet.thumbnails?.high?.url||x.snippet.thumbnails?.medium?.url||""}));
+}
+function interestScore(video,query){
+ const interests=watchHistory.slice(-30).flatMap(x=>x.tags||[]).map(x=>String(x).toLowerCase());
+ const text=(video.title+" "+video.description+" "+video.tags.join(" ")).toLowerCase();
+ const queryTerms=query.toLowerCase().split(/\s+/).filter(x=>x.length>2);
+ const queryScore=queryTerms.reduce((n,t)=>n+(text.includes(t)?3:0),0);
+ const interest=interests.reduce((n,t)=>n+(t&&text.includes(t)?1.5:0),0);
+ const freshness=video.publishedAt?Math.max(0,1-(Date.now()-new Date(video.publishedAt).getTime())/(365*864e5)):0;
+ const popularity=Math.min(2,Math.log10(Math.max(1,video.views))/5);
+ const alreadySeen=watchHistory.some(x=>x.id===video.id)?-8:0;
+ return queryScore+interest+freshness+popularity+alreadySeen;
+}
+async function discover(query,{addCategory=true}={}){
+ const q=query.trim();if(!q)return;const seq=++searchSequence;setStatus("SEARCHING YOUTUBE PUBLIC CATALOGUE…");
+ try{
+  const videos=await youtubeSearch(q);if(seq!==searchSequence)return;
+  const ranked=videos.map(v=>({...v,score:interestScore(v,q)})).sort((a,b)=>b.score-a.score);
+  if(!ranked.length){setStatus("NO PUBLIC RESULTS — TRY ANOTHER SUBJECT");toast("No public videos found for that subject.");return;}
+  const id="live-"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,30);
+  let gallery=galleries.find(g=>g.id===id);
+  if(!gallery){gallery={id,name:q.length>22?q.slice(0,21)+"…":q,title:q.charAt(0).toUpperCase()+q.slice(1),description:"A live YouTube collection ranked by subject relevance, freshness and your local viewing interests.",query:q,intro:"LIVE DISCOVERY / "+q.toUpperCase(),videos:[],dynamic:true};galleries.push(gallery);}
+  gallery.videos=ranked;gallery.query=q;gallery.dynamic=true;activeGallery=gallery;activeVideos=ranked;
+  buildNav();updateHeading(gallery);buildCards();setStatus("LIVE RESULTS / "+ranked.length+" VIDEOS / RELEVANCE RANKED");
+ }catch(error){console.error(error);setStatus("YOUTUBE CONNECTION NEEDS ATTENTION");toast(error.message+" Check the API key and YouTube Data API access.");}
+}
+async function loadGallery(g){activeGallery=g;buildNav();updateHeading(g);document.getElementById("search").value="";
+ if(g.videos?.length){activeVideos=[...g.videos];buildCards();return;}
+ await discover(g.query,{addCategory:false});
+}
+function openFocus(video){selectedVideo=video;focusOpen=true;document.getElementById("focus").classList.add("open");document.getElementById("focus-title").textContent=video.title;document.getElementById("focus-meta").textContent=video.creator+" / "+activeGallery.name;document.getElementById("focus-description").textContent=video.description||"Explore this video and follow the related ideas in its gallery.";watchHistory.push({id:video.id,tags:video.tags||[],title:video.title,at:Date.now()});watchHistory=watchHistory.slice(-100);localStorage.setItem("construct_watch_history",JSON.stringify(watchHistory));if(playerReady&&player)player.loadVideoById(video.id);else window.pendingVideo=video.id;}
 function closeFocus(){focusOpen=false;document.getElementById("focus").classList.remove("open");if(player&&player.pauseVideo)player.pauseVideo();}
-function nextVideo(){if(!selectedVideo)return;const idx=activeVideos.findIndex(v=>v.id===selectedVideo.id);const next=activeVideos[(idx+1)%activeVideos.length];openFocus(next);}
+function nextVideo(){if(!selectedVideo||!activeVideos.length)return;const idx=activeVideos.findIndex(v=>v.id===selectedVideo.id);openFocus(activeVideos[(idx+1)%activeVideos.length]);}
 document.getElementById("close-focus").addEventListener("click",closeFocus);document.getElementById("back-gallery").addEventListener("click",closeFocus);document.getElementById("next-video").addEventListener("click",nextVideo);
 document.getElementById("open-youtube").addEventListener("click",()=>{if(selectedVideo)window.open("https://www.youtube.com/watch?v="+selectedVideo.id,"_blank","noopener");});
-document.getElementById("search").addEventListener("input",e=>filterVideos(e.target.value));
-renderer.domElement.addEventListener("pointermove",e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;if(dragStart){if(Math.abs(e.clientX-dragStart.x)>5||Math.abs(e.clientY-dragStart.y)>5)isDragging=true;camera.position.x=Math.max(-2.1,Math.min(2.1,dragStart.camX-(e.clientX-dragStart.x)*.009));camera.position.y=Math.max(.2,Math.min(2.8,dragStart.camY+(e.clientY-dragStart.y)*.006));}});
-renderer.domElement.addEventListener("pointerdown",e=>{dragStart={x:e.clientX,y:e.clientY,camX:camera.position.x,camY:camera.position.y};isDragging=false;});
-renderer.domElement.addEventListener("pointerup",()=>{dragStart=null;});
-renderer.domElement.addEventListener("click",()=>{if(isDragging||focusOpen)return;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);if(hits.length){let obj=hits[0].object;while(obj&&!obj.userData.video)obj=obj.parent;if(obj&&obj.userData.video)openFocus(obj.userData.video);}});
-renderer.domElement.addEventListener("pointerleave",()=>{mouse.set(9,9);dragStart=null;});
-function animate(t){requestAnimationFrame(animate);TWEEN.update(t);camera.lookAt(0,.05,-14);raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered)hovered.scale.set(1.035,1.035,1.035);renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
-window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"068rdc75mHM",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
+document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter")discover(e.target.value);});
+document.getElementById("settings-toggle").addEventListener("click",()=>document.getElementById("settings").classList.toggle("open"));
+document.getElementById("settings-close").addEventListener("click",()=>document.getElementById("settings").classList.remove("open"));
+document.getElementById("api-key").value=apiKey;
+document.getElementById("save-key").addEventListener("click",()=>{apiKey=document.getElementById("api-key").value.trim();localStorage.setItem("construct_youtube_api_key",apiKey);document.getElementById("settings").classList.remove("open");setStatus(apiKey?"YOUTUBE API CONNECTED — SEARCH A SUBJECT":"API KEY REQUIRED");if(apiKey)toast("YouTube connection saved in this browser.");});
+function enterSearch(){const q=document.getElementById("search").value.trim();if(q)discover(q);}
+document.getElementById("search").addEventListener("change",enterSearch);
+renderer.domElement.addEventListener("pointermove",e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;});
+renderer.domElement.addEventListener("click",()=>{if(focusOpen)return;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);if(hits.length){let obj=hits[0].object;while(obj&&!obj.userData.video)obj=obj.parent;if(obj?.userData.video)openFocus(obj.userData.video);}});
+function animate(){requestAnimationFrame(animate);raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered)hovered.scale.set(1.035,1.035,1.035);renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
+window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
 const yt=document.createElement("script");yt.src="https://www.youtube.com/iframe_api";document.head.appendChild(yt);
-buildNav();showGallery(galleries[0]);animate(0);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enableRotate=true;controls.enableZoom=true;controls.enablePan=true;controls.minDistance=5;controls.maxDistance=52;controls.minPolarAngle=.12;controls.maxPolarAngle=Math.PI-.12;controls.target.set(0,0,0);controls.rotateSpeed=.62;controls.zoomSpeed=.85;controls.panSpeed=.65;controls.update();
+buildNav();updateHeading(activeGallery);buildCards();setStatus(apiKey?"YOUTUBE API CONNECTED — SEARCH A SUBJECT":"CONNECT API KEY FOR LIVE YOUTUBE SEARCH");animate();
 window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&focusOpen)closeFocus();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(focusOpen)closeFocus();document.getElementById("settings").classList.remove("open");}});
+
 </script>
 </body>
 </html>
