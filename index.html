@@ -295,7 +295,9 @@ function setPavilionVideo(video){
  });
 }
 function hidePreview(){
- clearTimeout(previewTimer);pavilionPointer=null;
+ clearTimeout(previewTimer);pavilionPointer=null;mouse.set(9,9);
+ if(hovered)hovered.scale.set(1,1,1);
+ hovered=null;
 }
 function showPreview(card){
  const video=card?.userData?.video;if(!video)return;
