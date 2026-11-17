@@ -1,510 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE CONSTRUCT | CORRIDOR MODE</title>
-    <style>
-        /* --- RESET & BASE --- */
-        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; color: #fff; }
-        
-        /* --- LAYERS --- */
-        /* Layer 1: Background Video (Blurred/Atmospheric) */
-        #bg-video-container {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; pointer-events: none; opacity: 0.3; overflow: hidden;
-        }
-        #bg-video-iframe {
-            width: 100vw; height: 56.25vw; /* 16:9 Aspect Ratio */
-            min-height: 100vh; min-width: 177.77vh;
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            filter: blur(10px) brightness(0.4) contrast(1.2);
-            pointer-events: none;
-        }
-        
-        /* Layer 2: 3D Scene (The Corridor) */
-        #canvas-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
-        }
-
-        /* Layer 3: UI (HUD) */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between;
-        }
-
-        /* Search Bar */
-        #search-container {
-            pointer-events: auto; width: 100%; text-align: center; padding-top: 30px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-        }
-        #search-input {
-            background: rgba(20,20,20,0.8); border: 1px solid #444; color: #fff;
-            padding: 12px 20px; width: 300px; border-radius: 30px; outline: none;
-            font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;
-            transition: 0.3s; backdrop-filter: blur(5px);
-        }
-        #search-input:focus { border-color: #fff; width: 350px; background: rgba(0,0,0,0.9); }
-        #search-input::placeholder { color: #666; }
-
-        /* Layer 4: Focus Overlay (The Player) */
-        #focus-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 20;
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
-        }
-        #focus-overlay.active { opacity: 1; pointer-events: auto; }
-        
-        .focus-layout {
-            display: flex; width: 90%; max-width: 1400px; height: 80%; gap: 20px;
-        }
-
-        .video-wrapper {
-            flex: 3; background: #111; border: 1px solid #333;
-            display: flex; align-items: center; justify-content: center;
-            position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
-        #focus-player { width: 100%; height: 100%; }
-
-        .sidebar {
-            flex: 1; display: flex; flex-direction: column; justify-content: space-between; pointer-events: auto;
-        }
-
-        .panel-box { background: #0a0a0a; border: 1px solid #222; padding: 25px; }
-        .panel-title { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; }
-        
-        /* Buttons */
-        .nav-row { display: flex; gap: 10px; flex-direction: column; }
-        .btn {
-            background: transparent; border: 1px solid #444; color: #ccc; padding: 15px;
-            text-transform: uppercase; font-size: 0.8rem; cursor: pointer; transition: 0.2s;
-            text-align: left; display: flex; justify-content: space-between; align-items: center;
-        }
-        .btn:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.05); }
-        .btn-primary { border-color: #fff; color: #fff; font-weight: bold; }
-        .btn-primary:hover { background: #fff; color: #000; }
-        
-        .bridge-tag { font-size: 0.6rem; background: #222; padding: 2px 6px; border-radius: 2px; color: #aaa; }
-
-        /* Exit Debrief */
-        #debrief {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: #080808; border-top: 1px solid #333;
-            padding: 30px; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
-            z-index: 30;
-        }
-        #debrief.active { transform: translateY(0); }
-        .debrief-text h3 { margin: 0 0 5px 0; font-weight: 400; letter-spacing: 1px; }
-        .debrief-text p { margin: 0; color: #666; font-size: 0.9rem; }
-        .debrief-actions { display: flex; gap: 15px; }
-        .btn-debrief { padding: 10px 25px; font-size: 0.8rem; }
-
-        /* Loading Text */
-        #loader {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #444; text-transform: uppercase; letter-spacing: 3px; font-size: 0.8rem;
-            z-index: 0; pointer-events: none;
-        }
-    </style>
-    
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07090d">
+<title>THE CONSTRUCT — A spatial video library</title>
+<style>
+:root{--bg:#07090d;--panel:rgba(12,16,22,.78);--line:rgba(205,222,238,.16);--muted:#8d9aa8;--white:#f3f6f8;--cyan:#9be7e2;--gold:#d9c39a}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--white);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 44%,rgba(39,66,76,.25),transparent 48%),linear-gradient(110deg,#080b10 0%,#0b1017 52%,#080a0e 100%)}
+#canvas-container{position:absolute;inset:0;z-index:1}
+#ui{position:absolute;inset:0;z-index:5;pointer-events:none}
+.topbar{position:absolute;top:0;left:0;right:0;height:82px;padding:18px 30px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(3,5,8,.9),rgba(3,5,8,0));pointer-events:none}
+.brand{display:flex;align-items:center;gap:13px}.brand-mark{width:29px;height:29px;border:1px solid rgba(155,231,226,.7);transform:rotate(45deg);position:relative}.brand-mark:after{content:"";position:absolute;inset:6px;border:1px solid rgba(155,231,226,.55)}.brand-name{font-size:11px;letter-spacing:4px;font-weight:650}.brand-sub{font-size:9px;color:#71808c;letter-spacing:2px;margin-top:4px}
+.top-meta{font-size:9px;letter-spacing:2px;color:#778591;text-transform:uppercase}
+.rail{position:absolute;left:26px;top:112px;bottom:34px;width:204px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+.rail-label{font-size:9px;letter-spacing:2.4px;color:#71808c;margin:0 0 10px 12px;text-transform:uppercase}
+.category{height:48px;border:1px solid transparent;background:transparent;color:#a7b1bb;text-align:left;padding:0 13px;display:flex;align-items:center;gap:12px;cursor:pointer;letter-spacing:.8px;font-size:11px;transition:.25s}
+.category .dot{width:5px;height:5px;border-radius:50%;background:#53616c;box-shadow:0 0 0 4px rgba(130,150,160,.06)}
+.category:hover{border-color:var(--line);background:rgba(255,255,255,.035);color:#fff}
+.category.active{border-color:rgba(155,231,226,.35);background:linear-gradient(90deg,rgba(155,231,226,.11),rgba(155,231,226,.015));color:#efffff}
+.category.active .dot{background:var(--cyan);box-shadow:0 0 12px rgba(155,231,226,.8)}
+.rail-bottom{margin-top:auto;padding:13px 12px;border-top:1px solid var(--line);color:#687783;font-size:9px;line-height:1.7;letter-spacing:1px}
+.search-wrap{position:absolute;top:102px;left:50%;transform:translateX(-50%);width:min(420px,42vw);pointer-events:auto}
+#search{width:100%;height:42px;padding:0 17px 0 42px;border:1px solid rgba(200,220,230,.2);border-radius:2px;background:rgba(8,12,17,.72);backdrop-filter:blur(18px);color:#fff;outline:none;font-size:11px;letter-spacing:.7px}
+#search:focus{border-color:rgba(155,231,226,.55)}#search::placeholder{color:#75818b}
+.search-icon{position:absolute;left:16px;top:12px;color:#91a1aa;font-size:14px}
+.scene-heading{position:absolute;left:260px;top:116px;pointer-events:none}.eyebrow{font-size:9px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;margin-bottom:11px}.scene-heading h1{font-size:clamp(25px,3vw,42px);font-weight:300;letter-spacing:-1.6px;margin:0 0 8px}.scene-heading p{font-size:11px;color:#8c9aa4;margin:0;letter-spacing:.4px}
+.hint{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);font-size:9px;letter-spacing:2px;color:#687781;text-transform:uppercase;pointer-events:none;white-space:nowrap}
+.status{position:absolute;right:30px;bottom:29px;font-size:9px;letter-spacing:1.5px;color:#64727d;pointer-events:none}
+#focus{position:absolute;inset:0;z-index:12;background:rgba(3,5,8,.96);backdrop-filter:blur(24px);display:none;align-items:center;justify-content:center;padding:5vw;pointer-events:auto}
+#focus.open{display:flex}
+.focus-shell{width:min(1440px,100%);height:min(820px,90vh);display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:22px}
+.player-column{display:flex;flex-direction:column;min-width:0}.player-frame{position:relative;flex:1;background:#000;border:1px solid rgba(210,230,235,.2);box-shadow:0 25px 90px rgba(0,0,0,.5);min-height:0}
+#player{position:absolute;inset:0;width:100%;height:100%}
+.video-details{padding:17px 2px 0}.video-details h2{font-size:20px;font-weight:400;margin:0 0 7px}.video-details p{font-size:11px;color:#8c9aa4;margin:0;line-height:1.6}
+.focus-side{display:flex;flex-direction:column;gap:12px}.side-panel{border:1px solid var(--line);background:rgba(16,21,28,.72);padding:19px}.side-label{font-size:9px;letter-spacing:2px;color:#84939d;text-transform:uppercase;margin-bottom:13px}.side-copy{font-size:12px;color:#b9c3ca;line-height:1.7}
+.action{border:1px solid rgba(190,210,220,.24);background:transparent;color:#e9f2f4;padding:12px 14px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;text-align:left;transition:.2s}.action:hover{border-color:var(--cyan);color:var(--cyan)}.action.primary{border-color:rgba(155,231,226,.55);color:var(--cyan)}
+.close-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.close{border:0;background:none;color:#9caab3;font-size:22px;cursor:pointer;padding:4px 8px}.close:hover{color:white}
+#toast{position:absolute;left:50%;bottom:75px;transform:translateX(-50%);padding:10px 15px;background:#101820;border:1px solid var(--line);color:#c6d2d8;font-size:10px;letter-spacing:.6px;opacity:0;transition:.25s;pointer-events:none;z-index:20}#toast.show{opacity:1}
+@media(max-width:760px){.topbar{padding:16px}.top-meta{display:none}.rail{left:12px;top:84px;bottom:auto;width:auto;right:12px;flex-direction:row;overflow-x:auto;gap:5px}.rail-label,.rail-bottom{display:none}.category{flex:0 0 auto;height:36px;padding:0 10px;font-size:9px}.category .dot{display:none}.search-wrap{top:137px;width:calc(100% - 32px)}.scene-heading{left:18px;top:194px}.scene-heading h1{font-size:27px}.scene-heading p{max-width:260px;line-height:1.5}.hint{bottom:15px;font-size:8px}.status{display:none}.focus-shell{height:94vh;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:10px}.focus-side{display:grid;grid-template-columns:1fr 1fr}.side-panel{padding:12px}.side-panel:nth-child(2){display:none}.player-frame{min-height:220px}.video-details h2{font-size:16px}}
+</style>
 </head>
 <body>
-
-    <!-- 1. LOADING INDICATOR -->
-    <div id="loader">Initializing The Construct...</div>
-
-    <!-- 2. BACKGROUND VIDEO (Atmosphere) -->
-    <div id="bg-video-container">
-        <div id="bg-video-iframe"></div>
+<div id="canvas-container"></div>
+<div id="ui">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark"></div><div><div class="brand-name">THE CONSTRUCT</div><div class="brand-sub">A SPATIAL VIDEO LIBRARY</div></div></div>
+    <div class="top-meta">DISCOVER WITH INTENTION&nbsp;&nbsp; / &nbsp;&nbsp;01—05</div>
+  </header>
+  <nav class="rail" id="categories"><div class="rail-label">Explore environments</div></nav>
+  <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" placeholder="SEARCH A SUBJECT, IDEA OR CREATOR" autocomplete="off"></div>
+  <div class="scene-heading"><div class="eyebrow" id="scene-kicker">ENVIRONMENT 01 / THE QUANTUM GALLERY</div><h1 id="scene-title">The Quantum Gallery</h1><p id="scene-description">From the arguments of Einstein and Bohr to the strange behaviour of entangled particles.</p></div>
+  <div class="hint">SELECT A SCREEN TO ENTER&nbsp;&nbsp; · &nbsp;&nbsp;DRAG TO LOOK AROUND</div>
+  <div class="status" id="status">CURATED LIBRARY&nbsp; / &nbsp;00 ITEMS</div>
+</div>
+<div id="focus">
+  <div class="focus-shell">
+    <div class="player-column">
+      <div class="close-row"><span class="side-label">NOW PLAYING / THE CONSTRUCT</span><button class="close" id="close-focus" aria-label="Close player">×</button></div>
+      <div class="player-frame"><div id="player"></div></div>
+      <div class="video-details"><h2 id="focus-title"></h2><p id="focus-meta"></p></div>
     </div>
-
-    <!-- 3. 3D CORRIDOR (Spatial Interface) -->
-    <div id="canvas-container"></div>
-
-    <!-- 4. UI LAYER (HUD) -->
-    <div id="ui-layer">
-        <div id="search-container">
-            <input type="text" id="search-input" placeholder="SEARCH TOPIC OR VIBE (e.g. 'SPACE', 'CALM')" autocomplete="off">
-        </div>
-    </div>
-
-    <!-- 5. FOCUS MODE (Deep Dive) -->
-    <div id="focus-overlay">
-        <div class="focus-layout">
-            <!-- Left: Nav -->
-            <div class="sidebar">
-                <div class="panel-box">
-                    <div class="panel-title">Navigation</div>
-                    <div class="nav-row">
-                        <button class="btn" onclick="navigate(-1)"><span>PREV</span> <span>←</span></button>
-                        <button class="btn btn-primary" onclick="returnToOverview()"><span>EXIT TO VOID</span> <span>✕</span></button>
-                        <button class="btn" onclick="navigate(1)"><span>NEXT CHAPTER</span> <span>→</span></button>
-                    </div>
-                </div>
-                
-                <div class="panel-box">
-                    <div class="panel-title">Direct Optimization</div>
-                    <p style="font-size:0.8rem; color:#888; margin-bottom:10px;">Asset detected. High relevance match.</p>
-                    <button class="btn btn-primary" onclick="triggerTransaction()">ACQUIRE ASSET ($)</button>
-                </div>
-            </div>
-
-            <!-- Center: Video -->
-            <div class="video-wrapper">
-                <div id="focus-player"></div>
-            </div>
-
-            <!-- Right: Context/Next -->
-            <div class="sidebar">
-                <div class="panel-box">
-                    <div class="panel-title">Context</div>
-                    <h2 id="focus-title" style="margin:0; font-size:1.2rem; font-weight:300; line-height:1.4;">Video Title</h2>
-                    <p id="focus-meta" style="margin-top:5px; color:#666; font-size:0.8rem; text-transform:uppercase;">Creator</p>
-                </div>
-
-                <div class="panel-box">
-                    <div class="panel-title">Algorithm Suggestion</div>
-                    <div id="algo-text" style="font-size:0.8rem; color:#aaa; margin-bottom:15px;">
-                        Current Mood: <span style="color:#fff;">Focused</span>
-                    </div>
-                    <button class="btn" onclick="takeBridge()">
-                        <span>TAKE BRIDGE</span> <span class="bridge-tag">NOVELTY</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- EXIT DEBRIEF (Mission Complete) -->
-        <div id="debrief">
-            <div class="debrief-text">
-                <h3>SESSION COMPLETE</h3>
-                <p>Did this content solve your query?</p>
-            </div>
-            <div class="debrief-actions">
-                <button class="btn btn-debrief" onclick="closeDebrief(false)">Continue Watching</button>
-                <button class="btn btn-debrief btn-primary" onclick="closeDebrief(true)">Yes, End Session</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // --- 1. THE DATABASE (Curated, Embed-Safe Videos) ---
-        // Vibe: 1 (Calm) to 10 (High Energy)
-        // Type: Tech, Nature, Phil, DIY
-        const database = [
-            { id: '0526tl87eQ0', title: "How a Mechanical Watch Works", author: "Animagraffs", tags: ["tech", "engineering", "calm"], vibe: 3 },
-            { id: 'yQqAG7uHdLM', title: "Inside Google's Data Center", author: "Google", tags: ["tech", "infrastructure", "clean"], vibe: 4 },
-            { id: 'fCn8ts9KXsQ', title: "Primitive Technology: Hut", author: "Prim Tech", tags: ["diy", "nature", "silence"], vibe: 1 },
-            { id: '1ZYbU82GVz4', title: "The Spielberg Oner", author: "Every Frame a Painting", tags: ["film", "analysis", "calm"], vibe: 3 },
-            { id: 't_rzYnXa8gU', title: "Hubble Ultra Deep Field", author: "SpaceRip", tags: ["space", "nature", "epic"], vibe: 2 },
-            { id: 'L_LUpnjgPso', title: "How to Fold a Fitted Sheet", author: "Howdini", tags: ["diy", "lifehack", "calm"], vibe: 2 },
-            { id: '2p_0DShh9vQ', title: "The History of the World", author: "Horrible Histories", tags: ["history", "fun", "energy"], vibe: 8 },
-            { id: 'r7RqQhTfE9U', title: "Most Satisfying Video", author: "Satisfying World", tags: ["visual", "oddly satisfying", "chill"], vibe: 2 },
-            { id: 'e-P5IFTqB98', title: "Neutron Star Collision", author: "Kurzgesagt", tags: ["space", "science", "epic"], vibe: 6 },
-            { id: 'g-CcEtbqbbw', title: "The Internet's Own Boy", author: "PBS", tags: ["tech", "documentary", "serious"], vibe: 5 },
-            { id: 'W6NZfCO5SIk', title: "The Art of Clean Code", author: "Unity", tags: ["tech", "coding", "focus"], vibe: 4 },
-            { id: '8KpS2bANm00', title: "Making a Samurai Sword", author: "Discovery", tags: ["diy", "craft", "intense"], vibe: 6 },
-            { id: 'J0AxyB1z2cM', title: "How to Escape a Car Underwater", author: "Discovery", tags: ["diy", "survival", "urgent"], vibe: 9 },
-            { id: 'QAo2D3nR-tY', title: "Plato's Allegory of the Cave", author: "CrashCourse", tags: ["phil", "education", "calm"], vibe: 4 },
-            { id: 'Bqq1QkqZCrI', title: "The Physics of Time", author: "Veritasium", tags: ["science", "physics", "mindblowing"], vibe: 5 }
-        ];
-
-        // State
-        let activeSyllabus = [...database];
-        let currentIndex = 0;
-        let isOverview = true;
-        let bgPlayer, focusPlayer;
-        let cards = [];
-
-        // --- 2. ALGORITHM: RESONANCE ENGINE ---
-        function filterSyllabus(query) {
-            const q = query.toLowerCase();
-            if (!q) {
-                activeSyllabus = [...database];
-            } else {
-                // Logic: Word Matching OR Vibe Matching
-                activeSyllabus = database.filter(v => {
-                    const matchesWord = v.title.toLowerCase().includes(q) || v.tags.some(t => t.includes(q));
-                    
-                    // "Mood" matching (e.g., "chill", "fast", "epic")
-                    let matchesVibe = false;
-                    if (["calm", "slow", "chill", "meditative"].includes(q)) matchesVibe = v.vibe < 4;
-                    if (["fast", "energy", "fun", "epic"].includes(q)) matchesVibe = v.vibe > 6;
-                    
-                    return matchesWord || matchesVibe;
-                });
-            }
-            rebuildCorridor();
-        }
-
-        function findBridge(currentVideo) {
-            // Find a video with similar vibe but DIFFERENT tags
-            const bridge = activeSyllabus.find(v => {
-                return Math.abs(v.vibe - currentVideo.vibe) <= 2 && 
-                       !v.tags.some(t => currentVideo.tags.includes(t)) &&
-                       v.id !== currentVideo.id;
-            });
-            return bridge || activeSyllabus[0];
-        }
-
-        // --- 3. THREE.JS SETUP ---
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.FogExp2(0x050505, 0.035);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 2, 8); // Initial Overview Pos
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(0, 10, 5);
-        scene.add(dirLight);
-
-        // Floor Grid
-        const gridHelper = new THREE.GridHelper(100, 50, 0x333333, 0x111111);
-        gridHelper.position.y = -2.5;
-        scene.add(gridHelper);
-
-        // --- 4. BUILD THE CORRIDOR ---
-        const textureLoader = new THREE.TextureLoader();
-        const cardGeo = new THREE.PlaneGeometry(4, 2.25); // 16:9 aspect
-
-        function rebuildCorridor() {
-            // Clear existing cards
-            cards.forEach(c => scene.remove(c));
-            cards = [];
-
-            activeSyllabus.forEach((item, index) => {
-                // Create Material
-                const material = new THREE.MeshBasicMaterial({ 
-                    color: 0x222222, // Placeholder color until texture loads
-                    side: THREE.DoubleSide 
-                });
-                
-                const mesh = new THREE.Mesh(cardGeo, material);
-                // Position: Spread them out along Z axis
-                mesh.position.set(0, 0, -index * 3.5);
-                mesh.userData = { ...item, index: index, originalZ: -index * 3.5 };
-                
-                // Load Thumbnail
-                textureLoader.load(`https://img.youtube.com/vi/${item.id}/hqdefault.jpg`, (tex) => {
-                    material.map = tex;
-                    material.color.setHex(0xffffff); // Reset color to white so texture shows
-                    material.needsUpdate = true;
-                });
-
-                // Add a glowing border
-                const borderGeo = new THREE.PlaneGeometry(4.1, 2.35);
-                const borderMat = new THREE.MeshBasicMaterial({ color: 0x444444, wireframe: true, transparent: true, opacity: 0.3 });
-                const border = new THREE.Mesh(borderGeo, borderMat);
-                border.position.z = -0.01;
-                mesh.add(border);
-
-                scene.add(mesh);
-                cards.push(mesh);
-            });
-        }
-
-        // Initial Build
-        rebuildCorridor();
-
-        // --- 5. INTERACTION & NAVIGATION ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('mousemove', (event) => {
-            if(!isOverview) return;
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            
-            // Hover Logic
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cards);
-            
-            if (intersects.length > 0) {
-                document.body.style.cursor = 'pointer';
-                const data = intersects[0].object.userData;
-                // Switch background video on hover
-                if(bgPlayer && bgPlayer.loadVideoById && bgPlayer.getVideoData().video_id !== data.id) {
-                    bgPlayer.loadVideoById(data.id);
-                    bgPlayer.mute();
-                    bgPlayer.playVideo();
-                }
-            } else {
-                document.body.style.cursor = 'default';
-            }
-        });
-
-        window.addEventListener('mousedown', (event) => {
-            if(!isOverview) return;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cards);
-            if (intersects.length > 0) {
-                enterFocusMode(intersects[0].object.userData.index);
-            }
-        });
-
-        function enterFocusMode(index) {
-            isOverview = false;
-            currentIndex = index;
-            const data = activeSyllabus[index];
-
-            // UI Transition
-            document.getElementById('focus-overlay').classList.add('active');
-            document.getElementById('focus-title').innerText = data.title;
-            document.getElementById('focus-meta').innerText = data.author;
-            document.getElementById('debrief').classList.remove('active');
-            
-            // 3D Camera Transition: Fly into the card
-            const targetZ = data.originalZ;
-            new TWEEN.Tween(camera.position)
-                .to({ x: 0, y: 0, z: targetZ + 1.8 }, 1000) // Get close
-                .easing(TWEEN.Easing.Cubic.InOut)
-                .start();
-
-            // Load Focus Player
-            if (focusPlayer) {
-                focusPlayer.loadVideoById(data.id);
-                focusPlayer.playVideo();
-            }
-        }
-
-        window.returnToOverview = function() {
-            isOverview = true;
-            document.getElementById('focus-overlay').classList.remove('active');
-            document.getElementById('debrief').classList.remove('active');
-            
-            if (focusPlayer) focusPlayer.pauseVideo();
-
-            new TWEEN.Tween(camera.position)
-                .to({ x: 0, y: 2, z: 8 }, 1200)
-                .easing(TWEEN.Easing.Cubic.Out)
-                .start();
-        };
-
-        window.navigate = function(dir) {
-            let nextIndex = currentIndex + dir;
-            if (nextIndex >= 0 && nextIndex < activeSyllabus.length) {
-                enterFocusMode(nextIndex);
-            }
-        };
-
-        // Bridge Logic
-        window.takeBridge = function() {
-            const current = activeSyllabus[currentIndex];
-            const bridge = findBridge(current);
-            
-            // Find index of bridge in active list
-            const bridgeIndex = activeSyllabus.findIndex(v => v.id === bridge.id);
-            if (bridgeIndex !== -1) {
-                // Animate "warp" effect
-                document.getElementById('algo-text').innerHTML = `Warping to: <span style="color:#00ffc8;">${bridge.title}</span>`;
-                setTimeout(() => {
-                    enterFocusMode(bridgeIndex);
-                    document.getElementById('algo-text').innerText = "Current Mood: " + (bridge.vibe > 5 ? "Energetic" : "Focused");
-                }, 800);
-            }
-        };
-
-        // --- 6. YOUTUBE API ---
-        function onYouTubeIframeAPIReady() {
-            // Background Player (Atmosphere)
-            bgPlayer = new YT.Player('bg-video-iframe', {
-                height: '100%', width: '100%',
-                videoId: database[0].id,
-                playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 1, 'loop': 1, 'playlist': database.map(d=>d.id).join(',') },
-                events: { 'onReady': (e) => e.target.setPlaybackQuality('default') }
-            });
-
-            // Focus Player
-            focusPlayer = new YT.Player('focus-player', {
-                height: '100%', width: '100%',
-                videoId: database[0].id,
-                playerVars: { 'autoplay': 0, 'controls': 1, 'rel': 0 },
-                events: { 'onStateChange': onPlayerStateChange }
-            });
-            
-            document.getElementById('loader').style.display = 'none';
-        }
-
-        function onPlayerStateChange(event) {
-            if (event.data === YT.PlayerState.ENDED && !isOverview) {
-                document.getElementById('debrief').classList.add('active');
-            }
-        }
-
-        // Debrief
-        window.closeDebrief = function(success) {
-            document.getElementById('debrief').classList.remove('active');
-            if (success) {
-                returnToOverview();
-                alert("SESSION LOGGED.\nOptimization Data Updated.");
-            } else {
-                navigate(1); // Next video
-            }
-        };
-
-        window.triggerTransaction = function() {
-            const title = document.getElementById('focus-title').innerText;
-            alert(`DIRECT TRANSACTION INITIATED:\n\nAsset: ${title}\nCreator Payout: 95%\nPlatform Fee: 5%`);
-        };
-
-        // Search Listener
-        document.getElementById('search-input').addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
-                filterSyllabus(e.target.value);
-                // Reset camera pos
-                new TWEEN.Tween(camera.position).to({x:0, y:2, z:8}, 1000).start();
-            }
-        });
-
-        // --- 7. RENDER LOOP ---
-        function animate(time) {
-            requestAnimationFrame(animate);
-            TWEEN.update(time);
-
-            if (isOverview) {
-                // Idle drift
-                camera.position.x = Math.sin(time * 0.0003) * 0.5;
-                camera.lookAt(0, 0, -10);
-            } else {
-                // Lock camera on current card
-                const targetZ = activeSyllabus[currentIndex].originalZ;
-                camera.lookAt(0, 0, targetZ);
-            }
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Handle Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Inject API Script
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-    </script>
+    <aside class="focus-side">
+      <div class="side-panel"><div class="side-label">Your current chapter</div><div class="side-copy" id="focus-description"></div></div>
+      <div class="side-panel"><div class="side-label">Keep exploring</div><div class="side-copy">Move through the gallery to find the next idea. The library is organised by subject, not an endless feed.</div></div>
+      <button class="action" id="open-youtube">OPEN ORIGINAL ON YOUTUBE ↗</button>
+      <button class="action primary" id="next-video">NEXT IN THIS GALLERY →</button>
+      <button class="action" id="back-gallery">RETURN TO GALLERY</button>
+    </aside>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+<script>
+const galleries = [
+ {id:"quantum",name:"Quantum Physics",title:"The Quantum Gallery",description:"From the arguments of Einstein and Bohr to the strange behaviour of entangled particles.",intro:"ENVIRONMENT 01 / THE QUANTUM GALLERY",videos:[
+  {id:"068rdc75mHM",title:"Einstein's Quantum Riddle",creator:"NOVA PBS",description:"A full documentary following the experiments that tested quantum entanglement and Einstein's doubts about spooky action at a distance.",tags:["Einstein","entanglement","quantum","PBS","physics"]},
+  {id:"ISdBAf-ysI0",title:"Einstein vs Bohr: The Secrets Behind Quantum Physics",creator:"Spark",description:"Jim Al-Khalili traces the debate that shaped quantum physics, from the uncertainty principle to the question of what reality means.",tags:["Einstein","Bohr","history","quantum mechanics"]},
+  {id:"W2Xb2GFK2yc",title:"A Better Way to Picture Atoms",creator:"Science education",description:"A visual explanation that helps build a more useful mental model of atomic structure.",tags:["atoms","visualisation","physics"]},
+  {id:"tQSbms5MDvY",title:"Planck's Constant and the Origin of Quantum Mechanics",creator:"Physics education",description:"A lesson on the constant that helped launch quantum theory and change our understanding of energy.",tags:["Planck","quantum theory","history","physics"]},
+  {id:"UjaAxUO6-Uw",title:"Schrödinger's Cat",creator:"Science education",description:"The famous thought experiment used to explore superposition and the limits of classical intuition.",tags:["Schrodinger","superposition","quantum"]}
+ ]},
+ {id:"nature",name:"Nature",title:"The Living World",description:"A window into extraordinary ecosystems, animal behaviour and the patterns of the natural world.",intro:"ENVIRONMENT 02 / THE LIVING WORLD",videos:[
+  {id:"7ZhdXgRfxHI",title:"Incredible 4K Nature Scenes Narrated by David Attenborough",creator:"BBC Earth",description:"A collection of remarkable natural-history sequences, from animal adaptations to extraordinary encounters in the wild.",tags:["nature","wildlife","Attenborough","documentary","4K"]},
+  {id:"R-1c2xGajXc",title:"Extraordinary Nature Scenes in 4K",creator:"BBC Earth",description:"Explore habitats and the remarkable adaptations that allow animals to survive in very different environments.",tags:["nature","wildlife","habitats","BBC Earth"]},
+  {id:"fCn8ts9KXsQ",title:"Primitive Technology: Hut",creator:"Primitive Technology",description:"A quiet, process-led look at building with natural materials and understanding practical craft.",tags:["nature","craft","building","outdoors"]}
+ ]},
+ {id:"engineering",name:"Engineering",title:"The Engine Room",description:"Mechanisms, infrastructure and the ingenuity behind the systems we depend on.",intro:"ENVIRONMENT 03 / THE ENGINE ROOM",videos:[
+  {id:"9_QsCLYs2mY",title:"How a Mechanical Watch Works",creator:"Animagraffs",description:"A detailed 3D breakdown of the crown, mainspring, gear train, escapement and balance wheel inside a mechanical watch.",tags:["engineering","mechanical","3D","design","watch"]},
+  {id:"yQqAG7uHdLM",title:"Inside Google's Data Center",creator:"Google",description:"A look inside the infrastructure, hardware and operational systems behind large-scale data centres.",tags:["engineering","technology","infrastructure","computing"]},
+  {id:"8KpS2bANm00",title:"Making a Samurai Sword",creator:"Discovery",description:"A craft and materials-focused look at the demanding process behind traditional sword making.",tags:["engineering","materials","craft","manufacturing"]}
+ ]},
+ {id:"history",name:"History",title:"The Human Story",description:"Civilisations, inventions and the people whose decisions changed the direction of history.",intro:"ENVIRONMENT 04 / THE HUMAN STORY",videos:[
+  {id:"WltJPKFo_J4",title:"The Ancient World: The First Civilizations",creator:"The History of the World",description:"A documentary journey through the emergence of early civilisations, from ancient Egypt to the Persian Empire.",tags:["history","ancient","civilisation","Egypt","Persia"]},
+  {id:"g-CcEtbqbbw",title:"The Internet's Own Boy",creator:"PBS",description:"The story of Aaron Swartz, open access, technology and the public-interest questions surrounding the internet.",tags:["history","technology","internet","documentary"]}
+ ]},
+ {id:"philosophy",name:"Philosophy",title:"The Thinking Room",description:"Ideas about knowledge, reality, ethics and the questions that keep human beings thinking.",intro:"ENVIRONMENT 05 / THE THINKING ROOM",videos:[
+  {id:"QAo2D3nR-tY",title:"Plato's Allegory of the Cave",creator:"CrashCourse",description:"A guided introduction to Plato's thought experiment about perception, knowledge and the difference between appearance and reality.",tags:["philosophy","Plato","knowledge","reality"]},
+  {id:"Bqq1QkqZCrI",title:"The Physics of Time",creator:"Veritasium",description:"An exploration of time and the questions physics raises about how we experience the universe.",tags:["philosophy","physics","time","science"]}
+ ]}
+];
+let activeGallery = galleries[0], activeVideos = [...activeGallery.videos], cards = [], selectedVideo = null, player = null, playerReady = false, focusOpen = false;
+const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x080c12,.023);
+const camera = new THREE.PerspectiveCamera(53,innerWidth/innerHeight,.1,180); camera.position.set(0,1.2,10);
+const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight); renderer.outputEncoding=THREE.sRGBEncoding; document.getElementById("canvas-container").appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0xb9d2d8,.62));
+const keyLight = new THREE.PointLight(0x9be7e2,1.1,45); keyLight.position.set(-5,5,2); scene.add(keyLight);
+const warmLight = new THREE.PointLight(0xc7a77b,.65,40); warmLight.position.set(7,1,-12); scene.add(warmLight);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshBasicMaterial({color:0x080c11,transparent:true,opacity:.65})); floor.rotation.x=-Math.PI/2;floor.position.y=-3.2;scene.add(floor);
+const grid = new THREE.GridHelper(180,90,0x26353d,0x15232b);grid.position.y=-3.17;grid.material.transparent=true;grid.material.opacity=.24;scene.add(grid);
+const archMat = new THREE.MeshBasicMaterial({color:0x253942,wireframe:true,transparent:true,opacity:.16});
+for(let z=0;z>-70;z-=12){const arch=new THREE.Mesh(new THREE.TorusGeometry(8,.018,4,90,Math.PI),archMat);arch.position.set(0,0,z);arch.rotation.z=Math.PI;scene.add(arch);}
+const textureLoader = new THREE.TextureLoader(); const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2(9,9); let hovered=null, dragStart=null, isDragging=false;
+const cardWidth=4.65, cardHeight=2.62;
+function clearCards(){cards.forEach(c=>{scene.remove(c);c.traverse(o=>{if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}})});cards=[];}
+function buildCards(){
+ clearCards();
+ activeVideos.forEach((v,i)=>{
+  const side=i%2===0?-1:1, row=Math.floor(i/2), z=-row*8.2-2.5;
+  const group=new THREE.Group(); group.position.set(side*2.65, .05+(row%2)*.12,z); group.rotation.y=side<0?.31:-.31; group.rotation.z=side<0?.012:-.012;
+  const geo=new THREE.PlaneGeometry(cardWidth,cardHeight);
+  const mat=new THREE.MeshBasicMaterial({color:0x1a2730,side:THREE.DoubleSide});
+  const screen=new THREE.Mesh(geo,mat); screen.userData={video:v,index:i};group.add(screen);
+  const frame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(cardWidth+.12,cardHeight+.12)),new THREE.LineBasicMaterial({color:0x8db8bd,transparent:true,opacity:.58}));frame.position.z=.025;group.add(frame);
+  const glow=new THREE.Mesh(new THREE.PlaneGeometry(cardWidth+.38,cardHeight+.38),new THREE.MeshBasicMaterial({color:0x6aa6aa,transparent:true,opacity:.035,side:THREE.DoubleSide}));glow.position.z=-.035;group.add(glow);
+  const titleCanvas=document.createElement("canvas");titleCanvas.width=512;titleCanvas.height=128;const ctx=titleCanvas.getContext("2d");ctx.fillStyle="#101a22";ctx.fillRect(0,0,512,128);ctx.fillStyle="#9be7e2";ctx.font="16px Arial";ctx.fillText(String(i+1).padStart(2,"0")+" / "+activeGallery.name.toUpperCase(),22,34);ctx.fillStyle="#f2f5f5";ctx.font="22px Arial";wrapText(ctx,v.title,22,72,465,27);const labelTex=new THREE.CanvasTexture(titleCanvas);const label=new THREE.Mesh(new THREE.PlaneGeometry(cardWidth,1.16),new THREE.MeshBasicMaterial({map:labelTex,transparent:true,side:THREE.DoubleSide}));label.position.set(0,-1.9,.03);group.add(label);
+  textureLoader.load("https://i.ytimg.com/vi/"+v.id+"/hqdefault.jpg",tex=>{tex.encoding=THREE.sRGBEncoding;mat.map=tex;mat.color.setHex(0xffffff);mat.needsUpdate=true;},undefined,()=>{mat.color.setHex(0x23343b);});
+  group.userData={video:v,index:i,screen};scene.add(group);cards.push(group);
+ });
+ document.getElementById("status").textContent="CURATED LIBRARY  /  "+String(activeVideos.length).padStart(2,"0")+" VIDEOS";
+}
+function wrapText(ctx,text,x,y,maxWidth,lineHeight){const words=text.split(" ");let line="";for(let n=0;n<words.length;n++){const test=line+words[n]+" ";if(ctx.measureText(test).width>maxWidth&&n>0){ctx.fillText(line,x,y);line=words[n]+" ";y+=lineHeight;}else line=test;}ctx.fillText(line,x,y);}
+function showGallery(gallery){activeGallery=gallery;activeVideos=[...gallery.videos];document.querySelectorAll(".category").forEach(b=>b.classList.toggle("active",b.dataset.id===gallery.id));document.getElementById("scene-kicker").textContent=gallery.intro;document.getElementById("scene-title").textContent=gallery.title;document.getElementById("scene-description").textContent=gallery.description;document.getElementById("search").value="";buildCards();new TWEEN.Tween(camera.position).to({x:0,y:1.2,z:10},850).easing(TWEEN.Easing.Cubic.Out).start();}
+function buildNav(){const nav=document.getElementById("categories");galleries.forEach((g,i)=>{const b=document.createElement("button");b.className="category"+(i===0?" active":"");b.dataset.id=g.id;b.innerHTML='<span class="dot"></span><span>'+g.name+'</span>';b.addEventListener("click",()=>showGallery(g));nav.appendChild(b);});const foot=document.createElement("div");foot.className="rail-bottom";foot.textContent="FIVE WORLDS. ONE LIBRARY.\\nFOLLOW THE IDEA, NOT THE FEED.";nav.appendChild(foot);}
+function filterVideos(q){const query=q.trim().toLowerCase();activeVideos=query?activeGallery.videos.filter(v=>(v.title+" "+v.creator+" "+v.description+" "+v.tags.join(" ")).toLowerCase().includes(query)):[...activeGallery.videos];buildCards();if(!activeVideos.length)toast("No matches in this gallery. Try another term or environment.");}
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2400);}
+function openFocus(video){selectedVideo=video;focusOpen=true;document.getElementById("focus").classList.add("open");document.getElementById("focus-title").textContent=video.title;document.getElementById("focus-meta").textContent=video.creator+"  /  "+activeGallery.name;document.getElementById("focus-description").textContent=video.description;if(playerReady&&player){player.loadVideoById(video.id);}else{window.pendingVideo=video.id;} }
+function closeFocus(){focusOpen=false;document.getElementById("focus").classList.remove("open");if(player&&player.pauseVideo)player.pauseVideo();}
+function nextVideo(){if(!selectedVideo)return;const idx=activeVideos.findIndex(v=>v.id===selectedVideo.id);const next=activeVideos[(idx+1)%activeVideos.length];openFocus(next);}
+document.getElementById("close-focus").addEventListener("click",closeFocus);document.getElementById("back-gallery").addEventListener("click",closeFocus);document.getElementById("next-video").addEventListener("click",nextVideo);
+document.getElementById("open-youtube").addEventListener("click",()=>{if(selectedVideo)window.open("https://www.youtube.com/watch?v="+selectedVideo.id,"_blank","noopener");});
+document.getElementById("search").addEventListener("input",e=>filterVideos(e.target.value));
+renderer.domElement.addEventListener("pointermove",e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;if(dragStart&&Math.abs(e.clientX-dragStart.x)>5)isDragging=true;});
+renderer.domElement.addEventListener("pointerdown",e=>{dragStart={x:e.clientX,y:e.clientY,camX:camera.position.x,camY:camera.position.y};isDragging=false;});
+renderer.domElement.addEventListener("pointerup",()=>{dragStart=null;});
+renderer.domElement.addEventListener("click",()=>{if(isDragging||focusOpen)return;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);if(hits.length){let obj=hits[0].object;while(obj&&!obj.userData.video)obj=obj.parent;if(obj&&obj.userData.video)openFocus(obj.userData.video);}});
+renderer.domElement.addEventListener("pointerleave",()=>{mouse.set(9,9);dragStart=null;});
+function animate(t){requestAnimationFrame(animate);TWEEN.update(t);if(dragStart&&!focusOpen){const targetX=dragStart.camX-(mouse.x*0.0);camera.position.x+=(Math.max(-1.6,Math.min(1.6,targetX))-camera.position.x)*.035;}camera.lookAt(0,.05,-14);raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered)hovered.scale.set(1.035,1.035,1.035);renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
+window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"068rdc75mHM",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
+const yt=document.createElement("script");yt.src="https://www.youtube.com/iframe_api";document.head.appendChild(yt);
+buildNav();showGallery(galleries[0]);animate(0);
+window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&focusOpen)closeFocus();});
+</script>
 </body>
 </html>
