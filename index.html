@@ -52,6 +52,8 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 .settings-actions button{background:rgba(155,231,226,.12);border:1px solid rgba(155,231,226,.5);color:#9be7e2;padding:11px;font-size:9px;letter-spacing:1px;cursor:pointer}
 .settings-actions a{color:#9be7e2;font-size:9px;text-decoration:none;letter-spacing:1px}
 #settings small{margin-top:15px;color:#73828c}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 .category{flex-shrink:0}
 @media(max-width:760px){.settings-toggle{right:16px;top:190px;padding:9px}.search-wrap{top:137px}.scene-heading{top:245px}.rail{top:84px}.settings-toggle{top:188px}}
 
@@ -87,9 +89,9 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
     <div class="top-meta">DISCOVER WITH INTENTION&nbsp;&nbsp; / &nbsp;&nbsp;01—05</div>
   </header>
   <nav class="rail" id="categories"><div class="rail-label">Explore environments</div></nav>
-  <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" placeholder="SEARCH YOUTUBE — PRESS ENTER TO EXPLORE" autocomplete="off"><div id="search-state">ADD A YOUTUBE DATA API KEY TO LOAD LIVE RESULTS</div></div><button id="settings-toggle" class="settings-toggle">CONNECT YOUTUBE API</button>
+  <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" aria-label="Search public YouTube videos" placeholder="SEARCH YOUTUBE — PRESS ENTER TO EXPLORE" autocomplete="off"><div id="search-state" role="status" aria-live="polite">ADD A YOUTUBE DATA API KEY TO LOAD LIVE RESULTS</div></div><button id="settings-toggle" class="settings-toggle">CONNECT YOUTUBE API</button>
   <div class="scene-heading"><div class="eyebrow" id="scene-kicker">ENVIRONMENT 01 / THE QUANTUM GALLERY</div><h1 id="scene-title">The Quantum Gallery</h1><p id="scene-description">From the arguments of Einstein and Bohr to the strange behaviour of entangled particles.</p></div>
-  <div class="hint">ARROWS TO TRAVEL · CLICK A PANEL TO PLAY · DRAG TO LOOK AROUND</div><div class="loop-counter" id="loop-counter">PENROSE LOOP / 01 OF 24</div><div class="loop-nav" aria-label="Navigate the infinite gallery"><button class="up" id="nav-up" aria-label="Previous level">↑</button><button class="left" id="nav-left" aria-label="Previous panel">←</button><button class="down" id="nav-down" aria-label="Next level">↓</button><button class="right" id="nav-right" aria-label="Next panel">→</button></div><section id="settings"><div class="settings-head"><span>LIVE DISCOVERY CONNECTION</span><button id="settings-close">×</button></div><p>Use a YouTube Data API v3 key to search live public videos. Your key stays in this browser.</p><input id="api-key" type="password" placeholder="Paste YouTube Data API v3 key"><div class="settings-actions"><button id="save-key">SAVE CONNECTION</button><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">GET AN API KEY ↗</a></div><small>The platform cannot access YouTube’s private personal recommendation feed. The Construct builds its own transparent discovery ranking from public search results and your local viewing interests.</small></section>
+  <div class="hint">ARROWS TO TRAVEL · CLICK A PANEL TO PLAY · DRAG TO LOOK AROUND</div><div class="loop-counter" id="loop-counter">PENROSE LOOP / 01 OF 24</div><div class="loop-nav" aria-label="Navigate the infinite gallery"><button class="up" id="nav-up" aria-label="Previous level">↑</button><button class="left" id="nav-left" aria-label="Previous panel">←</button><button class="down" id="nav-down" aria-label="Next level">↓</button><button class="right" id="nav-right" aria-label="Next panel">→</button></div><section id="settings" role="dialog" aria-label="YouTube API connection settings" aria-modal="false"><div class="settings-head"><span>LIVE DISCOVERY CONNECTION</span><button id="settings-close">×</button></div><p>Use a YouTube Data API v3 key to search public videos. The key is held in this tab only; it is sent with API requests and is not an account login or a secret.</p><input id="api-key" type="password" autocomplete="off" aria-label="YouTube Data API v3 key" placeholder="Paste YouTube Data API v3 key"><div class="settings-actions"><button id="save-key">SAVE CONNECTION</button><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">GET AN API KEY ↗</a></div><small>Restrict this key in Google Cloud to YouTube Data API v3 and your website HTTP referrers. Browser keys can still be inspected. The Construct ranks public search results using relevance, freshness and local viewing interests; it cannot read YouTube’s private recommendation feed.</small></section>
   <div class="status" id="status">CURATED LIBRARY&nbsp; / &nbsp;00 ITEMS</div>
 </div>
 <div id="focus">
@@ -108,7 +110,7 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
     </aside>
   </div>
 </div>
-<div id="hover-preview" aria-hidden="true"><div class="preview-screen"><img id="preview-thumb" alt=""><div class="preview-scan"></div></div><div class="preview-meta"><div class="preview-title" id="preview-title"></div><div class="preview-live">PREVIEW</div></div></div><div id="toast"></div>
+<div id="hover-preview" aria-hidden="true"><div class="preview-screen"><img id="preview-thumb" alt=""><div class="preview-scan"></div></div><div class="preview-meta"><div class="preview-title" id="preview-title"></div><div class="preview-live">PREVIEW</div></div></div><div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
@@ -122,7 +124,7 @@ const starterTopics=[
  {id:"philosophy",name:"Philosophy",query:"philosophy ideas reality knowledge documentary",title:"The Thinking Room",description:"Ideas about knowledge, reality, ethics and the questions that keep us thinking."}
 ];
 let galleries=starterTopics.map(x=>({...x,videos:[],dynamic:false}));
-let activeGallery=galleries[0],activeVideos=[],displayVideos=[],rotationOffset=0,rotationTimer=null,cards=[],selectedVideo=null,player=null,playerReady=false,focusOpen=false,apiKey=localStorage.getItem("construct_youtube_api_key")||"",watchHistory=JSON.parse(localStorage.getItem("construct_watch_history")||"[]"),searchSequence=0;
+let activeGallery=galleries[0],activeVideos=[],displayVideos=[],rotationOffset=0,rotationTimer=null,cards=[],selectedVideo=null,player=null,playerReady=false,focusOpen=false,apiKey="",watchHistory=JSON.parse(localStorage.getItem("construct_watch_history")||"[]"),searchSequence=0;
 const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x080c12,.012);
 const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,220);camera.position.set(0,1.4,13);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputEncoding=THREE.sRGBEncoding;document.getElementById("canvas-container").appendChild(renderer.domElement);
@@ -177,11 +179,11 @@ function buildNav(){
 }
 async function youtubeSearch(query,pageToken=null){
  if(!apiKey){document.getElementById("settings").classList.add("open");toast("Connect a YouTube Data API key to load live videos.");return [];}
- const url=new URL("https://www.googleapis.com/youtube/v3/search");const params={part:"snippet",type:"video",maxResults:"24",q:query,safeSearch:"moderate",order:"relevance",key:apiKey};if(pageToken)params.pageToken=pageToken;url.search=new URLSearchParams(params).toString();
- const response=await fetch(url);const data=await response.json();if(!response.ok)throw new Error(data.error?.message||"YouTube search failed");
+ const url=new URL("https://www.googleapis.com/youtube/v3/search");const params={part:"snippet",type:"video",maxResults:"24",q:query,safeSearch:"moderate",order:"relevance",};if(pageToken)params.pageToken=pageToken;url.search=new URLSearchParams(params).toString();
+ const response=await fetch(url,{headers:{"X-Goog-Api-Key":apiKey}});const data=await response.json();if(!response.ok)throw new Error(data.error?.message||"YouTube search failed");
  const ids=(data.items||[]).map(x=>x.id?.videoId).filter(Boolean);if(!ids.length)return {videos:[],nextPageToken:null};
- const detailUrl=new URL("https://www.googleapis.com/youtube/v3/videos");detailUrl.search=new URLSearchParams({part:"snippet,contentDetails,statistics",id:ids.join(","),key:apiKey}).toString();
- const details=await fetch(detailUrl);const detailData=await details.json();if(!details.ok)throw new Error(detailData.error?.message||"Could not load video details");
+ const detailUrl=new URL("https://www.googleapis.com/youtube/v3/videos");detailUrl.search=new URLSearchParams({part:"snippet,contentDetails,statistics",id:ids.join(","),}).toString();
+ const details=await fetch(detailUrl,{headers:{"X-Goog-Api-Key":apiKey}});const detailData=await details.json();if(!details.ok)throw new Error(detailData.error?.message||"Could not load video details");
  return {videos:(detailData.items||[]).map(x=>({id:x.id,title:cleanText(x.snippet.title),creator:cleanText(x.snippet.channelTitle),description:cleanText(x.snippet.description).slice(0,420),tags:x.snippet.tags||[],categoryId:x.snippet.categoryId,views:Number(x.statistics?.viewCount||0),publishedAt:x.snippet.publishedAt,thumbnail:x.snippet.thumbnails?.high?.url||x.snippet.thumbnails?.medium?.url||""})),nextPageToken:data.nextPageToken||null};
 }
 function interestScore(video,query){
@@ -241,8 +243,7 @@ document.getElementById("open-youtube").addEventListener("click",()=>{if(selecte
 document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter")discover(e.target.value);});
 document.getElementById("settings-toggle").addEventListener("click",()=>document.getElementById("settings").classList.toggle("open"));
 document.getElementById("settings-close").addEventListener("click",()=>document.getElementById("settings").classList.remove("open"));
-document.getElementById("api-key").value=apiKey;
-document.getElementById("save-key").addEventListener("click",()=>{apiKey=document.getElementById("api-key").value.trim();localStorage.setItem("construct_youtube_api_key",apiKey);document.getElementById("settings").classList.remove("open");setStatus(apiKey?"YOUTUBE API CONNECTED — SEARCH A SUBJECT":"API KEY REQUIRED");if(apiKey){toast("YouTube connection saved in this browser.");discover(activeGallery.query||activeGallery.name);}});
+document.getElementById("save-key").addEventListener("click",()=>{const candidate=document.getElementById("api-key").value.trim();if(!candidate){apiKey="";setStatus("API KEY REQUIRED");toast("Enter a YouTube Data API v3 key to connect.");return;}apiKey=candidate;document.getElementById("api-key").value="";document.getElementById("settings").classList.remove("open");setStatus("YOUTUBE API READY IN THIS TAB — SEARCH A SUBJECT");toast("Key loaded for this tab only. Restrict it in Google Cloud.");discover(activeGallery.query||activeGallery.name);});
 function enterSearch(){const q=document.getElementById("search").value.trim();if(q)discover(q);}
 document.getElementById("search").addEventListener("change",enterSearch);
 let pointerDown=null,pointerDragged=false;renderer.domElement.addEventListener("pointerdown",e=>{pointerDown={x:e.clientX,y:e.clientY};pointerDragged=false;});renderer.domElement.addEventListener("pointermove",e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;if(pointerDown&&Math.hypot(e.clientX-pointerDown.x,e.clientY-pointerDown.y)>6)pointerDragged=true;});
@@ -273,9 +274,9 @@ function animate(){requestAnimationFrame(animate);controls.update();TWEEN.update
 window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
 const yt=document.createElement("script");yt.src="https://www.youtube.com/iframe_api";document.head.appendChild(yt);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enableRotate=true;controls.enableZoom=true;controls.enablePan=true;controls.minDistance=5;controls.maxDistance=52;controls.minPolarAngle=.12;controls.maxPolarAngle=Math.PI-.12;controls.target.set(0,0,0);controls.rotateSpeed=.62;controls.zoomSpeed=.85;controls.panSpeed=.65;controls.update();
-buildNav();updateHeading(activeGallery);buildCards();setStatus(apiKey?"YOUTUBE API CONNECTED — LOADING YOUR FIRST GALLERY":"CONNECT API KEY FOR LIVE YOUTUBE SEARCH");animate();if(apiKey)discover(activeGallery.query);
+buildNav();updateHeading(activeGallery);buildCards();setStatus("CONNECT API KEY FOR LIVE YOUTUBE SEARCH");animate();
 window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-document.addEventListener("keydown",e=>{if(!focusOpen&&!document.getElementById("settings").classList.contains("open")){if(e.key==="ArrowRight")movePanel(1);if(e.key==="ArrowLeft")movePanel(-1);if(e.key==="ArrowUp")moveLevel(-1);if(e.key==="ArrowDown")moveLevel(1);}if(e.key==="Escape"){if(focusOpen)closeFocus();document.getElementById("settings").classList.remove("open");}});
+document.addEventListener("keydown",e=>{const target=e.target;const typing=target&&(target.tagName==="INPUT"||target.tagName==="TEXTAREA"||target.isContentEditable);if(e.key==="Escape"){if(focusOpen)closeFocus();document.getElementById("settings").classList.remove("open");hidePreview();return;}if(!typing&&!focusOpen&&!document.getElementById("settings").classList.contains("open")){if(e.key==="ArrowRight")movePanel(1);if(e.key==="ArrowLeft")movePanel(-1);if(e.key==="ArrowUp")moveLevel(-1);if(e.key==="ArrowDown")moveLevel(1);}});
 
 </script>
 </body>
