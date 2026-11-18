@@ -77,28 +77,6 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 .preview-live{font-size:7px;letter-spacing:1.5px;color:#9be7e2;white-space:nowrap}
 .preview-live:before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:#9be7e2;margin-right:6px;box-shadow:0 0 8px #9be7e2}
 @media(max-width:760px){#hover-preview{display:none}}
-
-/* Central six-sided video pavilion */
-#video-pavilion{position:fixed;inset:0;z-index:10;display:grid;place-items:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s}
-#video-pavilion.active{opacity:1;visibility:visible}
-#video-pavilion:before{content:"";position:absolute;width:min(76vmin,900px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(3,8,12,.06),rgba(3,8,12,.72) 68%,transparent 72%);filter:blur(12px)}
-.pavilion-stage{width:min(48vmin,620px);height:min(48vmin,620px);perspective:1300px;position:relative;z-index:1}
-.pavilion-cube{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(28deg);animation:pavilionTurn 38s linear infinite;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
-.pavilion-face{position:absolute;inset:0;overflow:hidden;background:#05090d;border:1px solid rgba(155,231,226,.72);box-shadow:inset 0 0 36px rgba(95,218,211,.12),0 0 28px rgba(95,218,211,.13);backface-visibility:visible}
-.pavilion-face iframe{width:100%;height:100%;border:0;display:block;pointer-events:none}
-.pavilion-face.front{transform:translateZ(min(24vmin,310px))}
-.pavilion-face.back{transform:rotateY(180deg) translateZ(calc(min(48vmin,620px)/2))}
-.pavilion-face.right{transform:rotateY(90deg) translateZ(calc(min(48vmin,620px)/2))}
-.pavilion-face.left{transform:rotateY(-90deg) translateZ(calc(min(48vmin,620px)/2))}
-.pavilion-face.top{transform:rotateX(90deg) translateZ(calc(min(48vmin,620px)/2))}
-.pavilion-face.bottom{transform:rotateX(-90deg) translateZ(calc(min(48vmin,620px)/2))}
-.pavilion-caption{position:absolute;z-index:3;left:50%;bottom:calc(50% - min(31vmin,390px));transform:translateX(-50%);padding:9px 15px;background:rgba(4,9,13,.84);border:1px solid rgba(155,231,226,.32);color:#dffafa;font-size:9px;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;max-width:80vw;overflow:hidden;text-overflow:ellipsis}
-#canvas-container.pavilion-dim{filter:brightness(.23) saturate(.65);transition:filter .45s}
-#ui.pavilion-dim{opacity:.28;transition:opacity .45s}
-@keyframes pavilionTurn{from{transform:rotateX(-18deg) rotateY(0deg)}to{transform:rotateX(342deg) rotateY(360deg)}}
-@media(prefers-reduced-motion:reduce){.pavilion-cube{animation:none}}
-@media(max-width:760px){.pavilion-stage{width:76vw;height:76vw}.pavilion-face.front{transform:translateZ(38vw)}.pavilion-face.back{transform:rotateY(180deg) translateZ(38vw)}.pavilion-face.right{transform:rotateY(90deg) translateZ(38vw)}.pavilion-face.left{transform:rotateY(-90deg) translateZ(38vw)}.pavilion-face.top{transform:rotateX(90deg) translateZ(38vw)}.pavilion-face.bottom{transform:rotateX(-90deg) translateZ(38vw)}.pavilion-caption{bottom:calc(50% - 48vw);font-size:7px}}
-
 </style>
 </head>
 <body>
@@ -114,13 +92,6 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
   <div class="hint">ARROWS TO TRAVEL · CLICK A PANEL TO PLAY · DRAG TO LOOK AROUND</div><div class="loop-counter" id="loop-counter">PENROSE LOOP / 01 OF 24</div><div class="loop-nav" aria-label="Navigate the infinite gallery"><button class="up" id="nav-up" aria-label="Previous level">↑</button><button class="left" id="nav-left" aria-label="Previous panel">←</button><button class="down" id="nav-down" aria-label="Next level">↓</button><button class="right" id="nav-right" aria-label="Next panel">→</button></div><section id="settings"><div class="settings-head"><span>LIVE DISCOVERY CONNECTION</span><button id="settings-close">×</button></div><p>Use a YouTube Data API v3 key to search live public videos. Your key stays in this browser.</p><input id="api-key" type="password" placeholder="Paste YouTube Data API v3 key"><div class="settings-actions"><button id="save-key">SAVE CONNECTION</button><a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">GET AN API KEY ↗</a></div><small>The platform cannot access YouTube’s private personal recommendation feed. The Construct builds its own transparent discovery ranking from public search results and your local viewing interests.</small></section>
   <div class="status" id="status">CURATED LIBRARY&nbsp; / &nbsp;00 ITEMS</div>
 </div>
-
-<div id="video-pavilion" aria-hidden="true">
- <div class="pavilion-stage"><div class="pavilion-cube" id="pavilion-cube">
-  <div class="pavilion-face front"></div><div class="pavilion-face back"></div><div class="pavilion-face right"></div><div class="pavilion-face left"></div><div class="pavilion-face top"></div><div class="pavilion-face bottom"></div>
- </div></div><div class="pavilion-caption" id="pavilion-caption">SELECT A PANEL TO ENTER ITS VIDEO WORLD</div>
-</div>
-
 <div id="focus">
   <div class="focus-shell">
     <div class="player-column">
@@ -246,7 +217,6 @@ let currentPanelIndex=0;
 function navigateToPanel(index,animateMove=true){
  if(!displayVideos.length)return;
  const total=displayVideos.length;currentPanelIndex=((index%total)+total)%total;
- if(pavilion.classList.contains("active")){const chosen=displayVideos[currentPanelIndex];setPavilionVideo(chosen);}
  const targetCard=cards.find(c=>c.userData?.video?.id===displayVideos[currentPanelIndex].id);
  if(!targetCard)return;
  const normal=new THREE.Vector3(0,0,1).applyQuaternion(targetCard.quaternion).normalize();
@@ -276,35 +246,28 @@ document.getElementById("save-key").addEventListener("click",()=>{apiKey=documen
 function enterSearch(){const q=document.getElementById("search").value.trim();if(q)discover(q);}
 document.getElementById("search").addEventListener("change",enterSearch);
 let pointerDown=null,pointerDragged=false;renderer.domElement.addEventListener("pointerdown",e=>{pointerDown={x:e.clientX,y:e.clientY};pointerDragged=false;});renderer.domElement.addEventListener("pointermove",e=>{const r=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;if(pointerDown&&Math.hypot(e.clientX-pointerDown.x,e.clientY-pointerDown.y)>6)pointerDragged=true;});
-let wheelLocked=false;renderer.domElement.addEventListener("wheel",e=>{e.preventDefault();if(wheelLocked)return;wheelLocked=true;moveLevel(e.deltaY>0?1:-1).finally(()=>setTimeout(()=>wheelLocked=false,850));},{passive:false});
+let wheelLocked=false;renderer.domElement.addEventListener("wheel",e=>{e.preventDefault();if(wheelLocked)return;wheelLocked=true;moveLevel(e.deltaY>0?1:-1).finally(()=>setTimeout(()=>wheelLocked=false,850));hidePreview();},{passive:false});
 renderer.domElement.addEventListener("pointerleave",hidePreview);renderer.domElement.addEventListener("click",()=>{hidePreview();if(focusOpen||pointerDragged){pointerDragged=false;pointerDown=null;return;}pointerDown=null;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);if(hits.length){let obj=hits[0].object;while(obj&&!obj.userData.video)obj=obj.parent;if(obj?.userData.video)openFocus(obj.userData.video);}});
 
-const pavilion=document.getElementById("video-pavilion"),pavilionCube=document.getElementById("pavilion-cube"),pavilionFaces=[...document.querySelectorAll(".pavilion-face")],pavilionCaption=document.getElementById("pavilion-caption");
-let pavilionVideoId=null,pavilionPointer=null;
-function setPavilionVideo(video){
- if(!video||pavilionVideoId===video.id)return;
- pavilionVideoId=video.id;pavilionCaption.textContent=video.title+"  /  "+(activeGallery.name||"THE CONSTRUCT");
- pavilionFaces.forEach((face,i)=>{
-  face.innerHTML="";
-  const frame=document.createElement("iframe");
-  frame.src="https://www.youtube-nocookie.com/embed/"+encodeURIComponent(video.id)+"?autoplay=1&mute=1&controls=0&playsinline=1&rel=0&modestbranding=1&loop=1&playlist="+encodeURIComponent(video.id);
-  frame.title="Video pavilion face "+(i+1)+": "+video.title;
-  frame.allow="autoplay; encrypted-media; picture-in-picture";
-  frame.referrerPolicy="strict-origin-when-cross-origin";
-  face.appendChild(frame);
- });
-}
-function hidePreview(){
- clearTimeout(previewTimer);pavilion.classList.remove("active");
- document.getElementById("canvas-container").classList.remove("pavilion-dim");
- document.getElementById("ui").classList.remove("pavilion-dim");
- pavilion.setAttribute("aria-hidden","true");pavilionPointer=null;
-}
+const previewEl=document.getElementById("hover-preview"),previewScreen=previewEl.querySelector(".preview-screen"),previewThumb=document.getElementById("preview-thumb");
+function hidePreview(){clearTimeout(previewTimer);previewEl.classList.remove("visible");previewVideoId=null;const frame=previewScreen.querySelector("iframe");if(frame)frame.remove();}
 function showPreview(card){
  const video=card?.userData?.video;if(!video)return;
- setPavilionVideo(video);pavilion.classList.add("active");pavilion.setAttribute("aria-hidden","false");
- document.getElementById("canvas-container").classList.add("pavilion-dim");
- document.getElementById("ui").classList.add("pavilion-dim");
+ clearTimeout(previewTimer);if(previewVideoId===video.id)return;hidePreview();previewVideoId=video.id;
+ document.getElementById("preview-title").textContent=video.title;
+ previewThumb.src=video.thumbnail||("https://i.ytimg.com/vi/"+video.id+"/hqdefault.jpg");
+ const projected=card.position.clone();card.parent.localToWorld(projected);projected.project(camera);
+ const x=Math.max(180,Math.min(innerWidth-180,(projected.x*.5+.5)*innerWidth));
+ const y=Math.max(185,Math.min(innerHeight-170,(-projected.y*.5+.5)*innerHeight));
+ previewEl.style.left=x+"px";previewEl.style.top=y+"px";
+ previewEl.classList.add("visible");
+ previewTimer=setTimeout(()=>{
+  if(previewVideoId!==video.id||!previewEl.classList.contains("visible"))return;
+  const frame=document.createElement("iframe");
+  frame.src="https://www.youtube-nocookie.com/embed/"+encodeURIComponent(video.id)+"?autoplay=1&mute=1&controls=0&playsinline=1&rel=0&modestbranding=1&loop=1&playlist="+encodeURIComponent(video.id);
+  frame.title="Muted hover preview: "+video.title;frame.allow="autoplay; encrypted-media; picture-in-picture";frame.referrerPolicy="strict-origin-when-cross-origin";
+  previewScreen.appendChild(frame);
+ },520);
 }
 function animate(){requestAnimationFrame(animate);controls.update();TWEEN.update();cards.forEach(card=>{if(!card.userData?.video)return;const distance=Math.abs(card.position.y-controls.target.y);const fade=THREE.MathUtils.clamp(1-distance/7.2,0,1);card.traverse(part=>{if(part.material){part.material.transparent=true;part.material.opacity=fade;}});});raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered){hovered.scale.set(1.045,1.045,1.045);showPreview(hovered);}else hidePreview();renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
 window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
