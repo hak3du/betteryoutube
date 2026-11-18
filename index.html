@@ -173,8 +173,9 @@ function buildCards(){
 }
 function updateHeading(g){document.getElementById("scene-kicker").textContent=(g.dynamic?"LIVE DISCOVERY / ":"ENVIRONMENT / ")+(g.name||"EXPLORE").toUpperCase();document.getElementById("scene-title").textContent=g.title||g.name;document.getElementById("scene-description").textContent=g.description||"A live collection assembled around your subject.";}
 function buildNav(){
- const nav=document.getElementById("categories");nav.innerHTML='<div class="rail-label">Explore environments</div>';
- galleries.forEach(g=>{const b=document.createElement("button");b.className="category"+(g.id===activeGallery.id?" active":"");b.dataset.id=g.id;b.innerHTML='<span class="dot"></span><span>'+g.name.replace(/[<>]/g,"")+'</span>';b.addEventListener("click",()=>loadGallery(g));nav.appendChild(b);});
+ const nav=document.getElementById("categories");nav.replaceChildren();
+ const label=document.createElement("div");label.className="rail-label";label.textContent="Explore environments";nav.appendChild(label);
+ galleries.forEach(g=>{const b=document.createElement("button");b.type="button";b.className="category"+(g.id===activeGallery.id?" active":"");b.dataset.id=g.id;b.setAttribute("aria-current",g.id===activeGallery.id?"page":"false");const dot=document.createElement("span");dot.className="dot";const name=document.createElement("span");name.textContent=g.name;b.append(dot,name);b.addEventListener("click",()=>loadGallery(g));nav.appendChild(b);});
  const foot=document.createElement("div");foot.className="rail-bottom";foot.textContent="LIVE SUBJECT WORLDS.\\nFOLLOW THE IDEA, NOT THE FEED.";nav.appendChild(foot);
 }
 async function youtubeSearch(query,pageToken=null){
