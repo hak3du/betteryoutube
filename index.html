@@ -44,15 +44,7 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 
 
 #search-state{font-size:8px;letter-spacing:1px;color:#74838d;margin:8px 0 0 3px;text-transform:uppercase}
-#settings{display:none;position:absolute;z-index:15;right:28px;top:145px;width:min(380px,calc(100vw - 40px));padding:20px;background:rgba(8,13,19,.97);border:1px solid rgba(155,231,226,.32);box-shadow:0 24px 70px #000;pointer-events:auto}
-#settings.open{display:block}.settings-head{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:2px;color:#9be7e2}
-#settings-close{background:none;border:0;color:#aab7be;font-size:22px;cursor:pointer}
-#settings p,#settings small{display:block;color:#9aa8b1;font-size:11px;line-height:1.65}
-#api-key{width:100%;padding:13px;background:#0c141b;border:1px solid rgba(190,210,220,.22);color:white;outline:none}
-.settings-actions{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:12px}
-.settings-actions button{background:rgba(155,231,226,.12);border:1px solid rgba(155,231,226,.5);color:#9be7e2;padding:11px;font-size:9px;letter-spacing:1px;cursor:pointer}
-.settings-actions a{color:#9be7e2;font-size:9px;text-decoration:none;letter-spacing:1px}
-#settings small{margin-top:15px;color:#73828c}
+
 :focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 .category{flex-shrink:0}
@@ -333,7 +325,6 @@ document.getElementById("nav-left").addEventListener("click",()=>movePanel(-1));
 document.getElementById("close-focus").addEventListener("click",closeFocus);document.getElementById("back-gallery").addEventListener("click",closeFocus);document.getElementById("next-video").addEventListener("click",nextVideo);
 document.getElementById("open-youtube").addEventListener("click",()=>{if(selectedVideo)window.open("https://www.youtube.com/watch?v="+selectedVideo.id,"_blank","noopener");});
 document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter")discover(e.target.value);});
-document.getElementById("settings-close").addEventListener("click",()=>document.getElementById("settings").classList.remove("open"));
 
 function enterSearch(){const q=document.getElementById("search").value.trim();if(q)discover(q);}
 document.getElementById("search").addEventListener("change",enterSearch);
