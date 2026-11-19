@@ -120,6 +120,20 @@ body.immersive-active #immersive-world{visibility:visible;opacity:1;pointer-even
 @media(max-width:560px){.immersive-top{left:15px;right:15px;top:16px}.immersive-brand{font-size:8px;letter-spacing:2px}.immersive-meta{display:none}#world-return{padding:9px;font-size:8px}.immersive-stage{inset:78px 12px 135px;grid-template-columns:.75fr 1.5fr .75fr;gap:6px}.immersive-column{gap:8px}.immersive-tile{aspect-ratio:.78}.immersive-tile .tile-caption{font-size:7px;white-space:normal;max-height:2.7em}.immersive-tile .tile-play{width:25px;height:25px;font-size:10px}.immersive-feature{aspect-ratio:.88}.feature-orb{width:48%}.feature-label strong{font-size:11px}.feature-label span{font-size:6px}.immersive-controls{height:34px;gap:15px}.immersive-orbs{bottom:61px;gap:25vw}.immersive-orb{width:58px}.immersive-foot{max-width:90%;overflow:hidden;text-overflow:ellipsis}}
 @media(prefers-reduced-motion:reduce){#current-world,#immersive-world{transition:none}}
 
+
+/* Full-bleed moving video wall and angled floor reflection */
+.immersive-wall-screen{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:#020713}
+.immersive-wall-screen>img{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;opacity:.34;filter:brightness(.58) saturate(1.15) blur(1px);transform:scale(1.035)}
+.immersive-wall-screen:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,5,15,.78),rgba(3,9,24,.22) 48%,rgba(2,5,15,.78)),linear-gradient(180deg,rgba(2,5,14,.18),rgba(2,5,14,.06) 48%,#02050d 100%)}
+.immersive-floor-reflection{position:absolute;z-index:1;left:12%;right:8%;bottom:-18%;height:48%;overflow:hidden;pointer-events:none;transform:perspective(650px) rotateX(57deg) rotateZ(-5deg) skewX(-13deg);transform-origin:top center;opacity:.44;filter:blur(1.2px)}
+.immersive-floor-reflection img{width:100%;height:100%;object-fit:cover;object-position:center 72%;transform:scaleY(-1);opacity:.8;mask-image:linear-gradient(to bottom,rgba(0,0,0,.8),transparent 78%);-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.8),transparent 78%)}
+.immersive-stage{z-index:2}
+.immersive-top,.immersive-foot{z-index:4}
+#immersive-world:before{z-index:1}
+#immersive-world:after{content:"";position:absolute;z-index:1;left:0;right:0;bottom:0;height:42%;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(1,4,12,.45) 35%,rgba(1,3,10,.94))}
+.immersive-orbs{z-index:3}
+#world-switch{z-index:12}
+
 </style>
 </head>
 <body>
@@ -157,6 +171,8 @@ body.immersive-active #immersive-world{visibility:visible;opacity:1;pointer-even
 </div>
 
 <div id="immersive-world" aria-label="Immersive video chamber" aria-hidden="true">
+  <div class="immersive-wall-screen"><img id="immersive-wall-image" alt=""></div>
+  <div class="immersive-floor-reflection"><img id="immersive-reflection-image" alt=""></div>
   <div class="immersive-top"><div class="immersive-brand">THE CONSTRUCT <small>IMMERSIVE VIDEO CHAMBER / WORLD 02</small></div><div class="immersive-meta" id="immersive-meta">LIVE VIDEO ENVIRONMENT</div><button id="world-return" type="button">← RETURN TO GALLERY</button></div>
   <main class="immersive-stage">
     <div class="immersive-column left" id="immersive-left"></div>
@@ -305,14 +321,14 @@ async function moveLevel(delta){if(!displayVideos.length)return;const currentLev
 function openFocus(video){selectedVideo=video;focusOpen=true;document.getElementById("focus").classList.add("open");document.getElementById("focus-title").textContent=video.title;document.getElementById("focus-meta").textContent=video.creator+" / "+activeGallery.name;document.getElementById("focus-description").textContent=video.description||"Explore this video and follow the related ideas in its gallery.";watchHistory.push({id:video.id,tags:video.tags||[],title:video.title,at:Date.now()});watchHistory=watchHistory.slice(-100);localStorage.setItem("construct_watch_history",JSON.stringify(watchHistory));if(playerReady&&player)player.loadVideoById(video.id);else window.pendingVideo=video.id;}
 function closeFocus(){focusOpen=false;document.getElementById("focus").classList.remove("open");if(player&&player.pauseVideo)player.pauseVideo();}
 function nextVideo(){if(!selectedVideo||!activeVideos.length)return;const idx=activeVideos.findIndex(v=>v.id===selectedVideo.id);openFocus(activeVideos[(idx+1)%activeVideos.length]);}
-document.getElementById("nav-left").addEventListener("click",()=>movePanel(-1));document.getElementById("nav-right").addEventListener("click",()=>movePanel(1));document.getElementById("nav-up").addEventListener("click",()=>moveLevel(-1));document.getElementById("nav-down").addEventListener("click",()=>moveLevel(1));
+document.getElementById("nav-left").addEventListener("click",()=>movePanel(-1));document.getElementById("nav-right").addEventListener("click",()=>movePanel(1));document.getElementById("nav-up").addEventListener("click",()=>moveLevel(1));document.getElementById("nav-down").addEventListener("click",()=>moveLevel(-1));
 document.getElementById("close-focus").addEventListener("click",closeFocus);document.getElementById("back-gallery").addEventListener("click",closeFocus);document.getElementById("next-video").addEventListener("click",nextVideo);
 document.getElementById("open-youtube").addEventListener("click",()=>{if(selectedVideo)window.open("https://www.youtube.com/watch?v="+selectedVideo.id,"_blank","noopener");});
 document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter")discover(e.target.value);});
 document.getElementById("settings-toggle").addEventListener("click",()=>document.getElementById("settings").classList.toggle("open"));
 document.getElementById("google-signin").addEventListener("click",beginGoogleSignIn);
 document.getElementById("google-signout").addEventListener("click",signOutGoogle);
-document.getElementById("save-client-id").addEventListener("click",()=>{const value=document.getElementById("google-client-id").value.trim();if(!value){toast("Enter your Google OAuth Client ID.");return;}googleClientId=value;localStorage.setItem("construct_google_client_id",value);document.getElementById("settings").classList.remove("open");toast("Google client ID saved in this browser. Sign in to connect your YouTube account.");});
+document.getElementById("save-client-id").addEventListener("click",()=>{const value=document.getElementById("google-client-id").value.trim();if(!value){toast("Enter your Google OAuth Client ID.");return;}googleClientId=value;googleTokenClient=null;localStorage.setItem("construct_google_client_id",value);document.getElementById("settings").classList.remove("open");toast("Google client ID saved. Sign in again to initialise the updated OAuth client.");});
 document.getElementById("settings-close").addEventListener("click",()=>document.getElementById("settings").classList.remove("open"));
 document.getElementById("save-key").addEventListener("click",()=>{const candidate=document.getElementById("api-key").value.trim();if(!candidate){apiKey="";setStatus("API KEY REQUIRED");toast("Enter a YouTube Data API v3 key to connect.");return;}apiKey=candidate;document.getElementById("api-key").value="";document.getElementById("settings").classList.remove("open");setStatus("YOUTUBE API READY IN THIS TAB — SEARCH A SUBJECT");toast("Key loaded for this tab only. Restrict it in Google Cloud.");discover(activeGallery.query||activeGallery.name);});
 function enterSearch(){const q=document.getElementById("search").value.trim();if(q)discover(q);}
@@ -343,20 +359,53 @@ function showPreview(card){
 }
 function animate(){requestAnimationFrame(animate);controls.update();TWEEN.update();cards.forEach(card=>{if(!card.userData?.video)return;const distance=Math.abs(card.position.y-controls.target.y);const fade=THREE.MathUtils.clamp(1-distance/7.2,0,1);card.traverse(part=>{if(part.material){part.material.transparent=true;part.material.opacity=fade;}});});raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered){hovered.scale.set(1.045,1.045,1.045);showPreview(hovered);}else hidePreview();renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
 window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
-const gis=document.createElement("script");gis.src="https://accounts.google.com/gsi/client";gis.async=true;gis.defer=true;document.head.appendChild(gis);
+let googleIdentityLoaded=false,googleIdentityLoadPromise;
+const gis=document.createElement("script");gis.src="https://accounts.google.com/gsi/client";gis.async=true;gis.defer=true;
+googleIdentityLoadPromise=new Promise((resolve,reject)=>{gis.onload=()=>{googleIdentityLoaded=true;resolve();};gis.onerror=()=>reject(new Error("Google Identity Services could not load. Check network or content blockers and refresh."));});
+document.head.appendChild(gis);
 async function beginGoogleSignIn(){
- if(!googleClientId){document.getElementById("settings").classList.add("open");toast("Add your Google OAuth Client ID first.");return;}
- if(!window.google?.accounts?.oauth2){toast("Google sign-in is still loading. Try again in a moment.");return;}
- if(!googleTokenClient){googleTokenClient=google.accounts.oauth2.initTokenClient({client_id:googleClientId,scope:"openid email profile https://www.googleapis.com/auth/youtube.readonly",callback:async response=>{if(response.error){toast("Google sign-in failed: "+response.error);return;}googleToken=response.access_token;try{const r=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+googleToken}});if(!r.ok)throw new Error("Could not read Google account profile");googleUser=await r.json();document.getElementById("account-avatar").src=googleUser.picture||"";document.getElementById("account-identity").style.display="flex";document.getElementById("account-email").textContent=googleUser.email||"Connected YouTube account";document.getElementById("google-signin").style.display="none";document.getElementById("google-signout").style.display="inline-block";document.getElementById("settings").classList.remove("open");setStatus("SIGNED IN / "+(googleUser.email||"GOOGLE ACCOUNT").toUpperCase());toast("Connected to your Google account. YouTube read-only access is active.");if(!apiKey)discover(activeGallery.query||activeGallery.name);}catch(e){googleToken=null;toast(e.message);}}});}
- googleTokenClient.requestAccessToken({prompt:"select_account"});
+ if(!googleClientId){document.getElementById("settings").classList.add("open");toast("Add your Google OAuth Web Client ID first.");return;}
+ if(!/^[0-9]+-[a-z0-9-]+\\.apps\\.googleusercontent\\.com$/i.test(googleClientId)){document.getElementById("settings").classList.add("open");toast("That does not look like a Google Web Client ID. Paste the value ending in .apps.googleusercontent.com.");return;}
+ try{
+  if(!window.google?.accounts?.oauth2)await Promise.race([googleIdentityLoadPromise,new Promise((_,reject)=>setTimeout(()=>reject(new Error("Google sign-in is taking too long to load. Refresh the page and try again.")),12000))]);
+  if(!window.google?.accounts?.oauth2)throw new Error("Google Identity Services loaded, but the OAuth library is unavailable.");
+  if(!googleTokenClient){
+   googleTokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:googleClientId,
+    scope:"openid email profile https://www.googleapis.com/auth/youtube.readonly",
+    include_granted_scopes:true,
+    callback:async response=>{
+     if(response.error){const detail=response.error_description||response.error_subtype||response.error;toast("Google OAuth: "+detail);setStatus("GOOGLE AUTHENTICATION FAILED");return;}
+     if(!response.access_token){toast("Google returned no access token. Check OAuth consent-screen configuration.");return;}
+     googleToken=response.access_token;
+     try{
+      const r=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+googleToken}});
+      if(!r.ok)throw new Error("Google authorised the request but the account profile could not be read (HTTP "+r.status+").");
+      googleUser=await r.json();
+      document.getElementById("account-avatar").src=googleUser.picture||"";
+      document.getElementById("account-identity").style.display="flex";
+      document.getElementById("account-email").textContent=googleUser.email||"Connected Google account";
+      document.getElementById("google-signin").style.display="none";
+      document.getElementById("google-signout").style.display="inline-block";
+      document.getElementById("settings").classList.remove("open");
+      setStatus("SIGNED IN / "+(googleUser.email||"GOOGLE ACCOUNT").toUpperCase());
+      toast("Google account connected. YouTube read-only permission granted.");
+      if(!apiKey)discover(activeGallery.query||activeGallery.name);
+     }catch(e){googleToken=null;toast(e.message);setStatus("GOOGLE PROFILE COULD NOT BE LOADED");}
+    },
+    error_callback:error=>{const reason=error?.type||"popup_error";toast("Google sign-in window: "+reason.replaceAll("_"," ")+". Allow pop-ups for this site and retry.");}
+   });
+  }
+  googleTokenClient.requestAccessToken({prompt:"select_account"});
+ }catch(e){toast(e.message);setStatus("GOOGLE SIGN-IN NOT READY");}
 }
 function signOutGoogle(){if(googleToken&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(googleToken,()=>{});googleToken=null;googleUser=null;googleTokenClient=null;document.getElementById("account-identity").style.display="none";document.getElementById("google-signin").style.display="inline-block";document.getElementById("google-signout").style.display="none";setStatus(apiKey?"YOUTUBE API READY IN THIS TAB":"SIGN IN OR CONNECT API KEY FOR LIVE SEARCH");toast("Google account disconnected from The Construct.");}
 if(googleClientId)document.getElementById("google-client-id").value=googleClientId;
 const yt=document.createElement("script");yt.src="https://www.youtube.com/iframe_api";document.head.appendChild(yt);
-const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enableRotate=true;controls.enableZoom=true;controls.enablePan=true;controls.minDistance=5;controls.maxDistance=52;controls.minPolarAngle=.12;controls.maxPolarAngle=Math.PI-.12;controls.target.set(0,0,0);controls.rotateSpeed=.62;controls.zoomSpeed=.85;controls.panSpeed=.65;controls.update();
+const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enableRotate=true;controls.enableZoom=true;controls.enablePan=true;controls.minDistance=3.5;controls.maxDistance=90;controls.minPolarAngle=.12;controls.maxPolarAngle=Math.PI-.12;controls.target.set(0,0,0);controls.rotateSpeed=.62;controls.zoomSpeed=.85;controls.panSpeed=.65;controls.update();
 buildNav();updateHeading(activeGallery);buildCards();setStatus("CONNECT API KEY FOR LIVE YOUTUBE SEARCH");animate();
 window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-document.addEventListener("keydown",e=>{const target=e.target;const typing=target&&(target.tagName==="INPUT"||target.tagName==="TEXTAREA"||target.isContentEditable);if(e.key==="Escape"){if(focusOpen)closeFocus();document.getElementById("settings").classList.remove("open");hidePreview();return;}if(!typing&&!focusOpen&&!document.getElementById("settings").classList.contains("open")){if(e.key==="ArrowRight")movePanel(1);if(e.key==="ArrowLeft")movePanel(-1);if(e.key==="ArrowUp")moveLevel(-1);if(e.key==="ArrowDown")moveLevel(1);}});
+document.addEventListener("keydown",e=>{const target=e.target;const typing=target&&(target.tagName==="INPUT"||target.tagName==="TEXTAREA"||target.isContentEditable);if(e.key==="Escape"){if(focusOpen)closeFocus();document.getElementById("settings").classList.remove("open");hidePreview();return;}if(!typing&&!focusOpen&&!document.getElementById("settings").classList.contains("open")){if(e.key==="ArrowRight")movePanel(1);if(e.key==="ArrowLeft")movePanel(-1);if(e.key==="ArrowUp")moveLevel(1);if(e.key==="ArrowDown")moveLevel(-1);}});
 
 
 /* Full-screen world switch. The original gallery remains mounted and unchanged. */
@@ -375,12 +424,15 @@ function renderImmersive(){
   document.getElementById("immersive-feature-title").textContent="Your next discovery";
   document.getElementById("immersive-feature-meta").textContent="CONNECT YOUTUBE IN WORLD 01 TO POPULATE THIS SPACE";
   document.getElementById("immersive-feature-image").removeAttribute("src");
+  document.getElementById("immersive-wall-image").removeAttribute("src");document.getElementById("immersive-reflection-image").removeAttribute("src");
   document.getElementById("immersive-orb-one").removeAttribute("src");document.getElementById("immersive-orb-two").removeAttribute("src");
   return;
  }
  immersiveIndex=((immersiveIndex%list.length)+list.length)%list.length;
  const feature=list[immersiveIndex];
  document.getElementById("immersive-feature-image").src=immersiveThumb(feature);
+ document.getElementById("immersive-wall-image").src=immersiveThumb(feature);
+ document.getElementById("immersive-reflection-image").src=immersiveThumb(feature);
  document.getElementById("immersive-feature-title").textContent=feature.title;
  document.getElementById("immersive-feature-meta").textContent=(feature.creator||"YOUTUBE")+"  /  "+(activeGallery.name||"THE CONSTRUCT");
  document.getElementById("immersive-orb-one").src=immersiveThumb(list[(immersiveIndex+1)%list.length]);
