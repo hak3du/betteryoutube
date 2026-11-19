@@ -260,14 +260,13 @@ function buildNav(){
  const foot=document.createElement("div");foot.className="rail-bottom";foot.textContent="LIVE SUBJECT WORLDS.\\nFOLLOW THE IDEA, NOT THE FEED.";nav.appendChild(foot);
 }
 async function youtubeSearch(query,pageToken=null){
- if(!apiKey&&!googleToken){document.getElementById("settings").classList.add("open");toast("Sign in with Google or add a YouTube Data API key to load live videos.");return []; }
+ if(!apiKey)return {videos:[],nextPageToken:null};
  const url=new URL("https://www.googleapis.com/youtube/v3/search");const params={part:"snippet",type:"video",maxResults:"24",q:query,safeSearch:"moderate",order:"relevance",};if(pageToken)params.pageToken=pageToken;if(apiKey)params.key=apiKey;url.search=new URLSearchParams(params).toString();
- const authHeaders=googleToken?{Authorization:"Bearer "+googleToken}:{};
- const response=await fetch(url,{headers:authHeaders});const data=await response.json();if(!response.ok)throw new Error(data.error?.message||"YouTube search failed");
+ const response=await fetch(url);const data=await response.json();if(!response.ok)throw new Error(data.error?.message||"YouTube search failed");
  const ids=(data.items||[]).map(x=>x.id?.videoId).filter(Boolean);if(!ids.length)return {videos:[],nextPageToken:null};
  const detailUrl=new URL("https://www.googleapis.com/youtube/v3/videos");detailUrl.search=new URLSearchParams({part:"snippet,contentDetails,statistics",id:ids.join(","),}).toString();
  if(apiKey)detailUrl.searchParams.set("key",apiKey);
- const details=await fetch(detailUrl,{headers:authHeaders});const detailData=await details.json();if(!details.ok)throw new Error(detailData.error?.message||"Could not load video details");
+ const details=await fetch(detailUrl);const detailData=await details.json();if(!details.ok)throw new Error(detailData.error?.message||"Could not load video details");
  return {videos:(detailData.items||[]).map(x=>({id:x.id,title:cleanText(x.snippet.title),creator:cleanText(x.snippet.channelTitle),description:cleanText(x.snippet.description).slice(0,420),tags:x.snippet.tags||[],categoryId:x.snippet.categoryId,views:Number(x.statistics?.viewCount||0),publishedAt:x.snippet.publishedAt,thumbnail:x.snippet.thumbnails?.high?.url||x.snippet.thumbnails?.medium?.url||""})),nextPageToken:data.nextPageToken||null};
 }
 function interestScore(video,query){
@@ -286,16 +285,16 @@ async function discover(query,{addCategory=true}={}){
  try{
   const result=await youtubeSearch(q);if(seq!==searchSequence)return;
   const ranked=result.videos.map(v=>({...v,score:interestScore(v,q)})).sort((a,b)=>b.score-a.score);
-  if(!ranked.length){setStatus("NO PUBLIC RESULTS — TRY ANOTHER SUBJECT");toast("No public videos found for that subject.");return;}
+  if(!ranked.length){setStatus("FEATURED VIDEOS · NO NEW LIVE RESULTS");toast("Showing the featured collection while live search is unavailable.");return;}
   const id="live-"+q.toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,30);
   let gallery=galleries.find(g=>g.id===id);
   if(!gallery){gallery={id,name:q.length>22?q.slice(0,21)+"…":q,title:q.charAt(0).toUpperCase()+q.slice(1),description:"A live YouTube collection ranked by subject relevance, freshness and your local viewing interests.",query:q,intro:"LIVE DISCOVERY / "+q.toUpperCase(),videos:[],dynamic:true};galleries.push(gallery);}
   gallery.videos=ranked;gallery.query=q;gallery.dynamic=true;gallery.nextPageToken=result.nextPageToken;activeGallery=gallery;activeVideos=ranked;rotationOffset=0;currentPanelIndex=0;displayVideos=[...activeVideos];
   buildNav();updateHeading(gallery);buildCards();setStatus("LIVE RESULTS / "+ranked.length+" VIDEOS · SCROLL TO UNFOLD +24");
- }catch(error){console.error(error);setStatus("YOUTUBE CONNECTION NEEDS ATTENTION");toast(error.message+" Check the API key and YouTube Data API access.");}
+ }catch(error){console.error(error);setStatus(activeVideos.length?"FEATURED VIDEOS · LIVE SEARCH TEMPORARILY UNAVAILABLE":"YOUTUBE SEARCH UNAVAILABLE");toast("Live search could not connect: "+error.message+". Featured videos remain available.");}
 }
 async function loadGallery(g){activeGallery=g;buildNav();updateHeading(g);document.getElementById("search").value="";
- if(g.videos?.length){activeVideos=[...g.videos];rotationOffset=0;currentPanelIndex=0;displayVideos=[...activeVideos];buildCards();setStatus("LIVE LIBRARY / "+activeVideos.length+" VIDEOS · SCROLL TO UNFOLD +24");return;}
+ if(g.videos?.length){activeVideos=[...g.videos];rotationOffset=0;currentPanelIndex=0;displayVideos=[...activeVideos];buildCards();setStatus("FEATURED LIBRARY / "+activeVideos.length+" VIDEOS");return;}
  await discover(g.query,{addCategory:false});
 }
 
@@ -325,10 +324,6 @@ document.getElementById("nav-left").addEventListener("click",()=>movePanel(-1));
 document.getElementById("close-focus").addEventListener("click",closeFocus);document.getElementById("back-gallery").addEventListener("click",closeFocus);document.getElementById("next-video").addEventListener("click",nextVideo);
 document.getElementById("open-youtube").addEventListener("click",()=>{if(selectedVideo)window.open("https://www.youtube.com/watch?v="+selectedVideo.id,"_blank","noopener");});
 document.getElementById("search").addEventListener("keydown",e=>{if(e.key==="Enter")discover(e.target.value);});
-document.getElementById("settings-toggle").addEventListener("click",()=>document.getElementById("settings").classList.toggle("open"));
-document.getElementById("google-signin").addEventListener("click",beginGoogleSignIn);
-document.getElementById("google-signout").addEventListener("click",signOutGoogle);
-document.getElementById("save-client-id").addEventListener("click",()=>{const value=document.getElementById("google-client-id").value.trim();if(!value){toast("Enter your Google OAuth Client ID.");return;}googleClientId=value;googleTokenClient=null;localStorage.setItem("construct_google_client_id",value);document.getElementById("settings").classList.remove("open");toast("Google client ID saved. Sign in again to initialise the updated OAuth client.");});
 document.getElementById("settings-close").addEventListener("click",()=>document.getElementById("settings").classList.remove("open"));
 
 function enterSearch(){const q=document.getElementById("search").value.trim();if(q)discover(q);}
@@ -359,53 +354,13 @@ function showPreview(card){
 }
 function animate(){requestAnimationFrame(animate);controls.update();TWEEN.update();cards.forEach(card=>{if(!card.userData?.video)return;const distance=Math.abs(card.position.y-controls.target.y);const fade=THREE.MathUtils.clamp(1-distance/7.2,0,1);card.traverse(part=>{if(part.material){part.material.transparent=true;part.material.opacity=fade;}});});raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(cards,true);let target=null;if(hits.length){let o=hits[0].object;while(o&&!o.userData.video)o=o.parent;target=o;}if(hovered!==target){if(hovered)hovered.scale.set(1,1,1);hovered=target;if(hovered){hovered.scale.set(1.045,1.045,1.045);showPreview(hovered);}else hidePreview();renderer.domElement.style.cursor=hovered?"pointer":"grab";}renderer.render(scene,camera);}
 window.onYouTubeIframeAPIReady=function(){player=new YT.Player("player",{width:"100%",height:"100%",videoId:"",playerVars:{rel:0,modestbranding:1,playsinline:1},events:{onReady:()=>{playerReady=true;if(window.pendingVideo&&focusOpen)player.loadVideoById(window.pendingVideo);}}});};
-let googleIdentityLoaded=false,googleIdentityLoadPromise;
-const gis=document.createElement("script");gis.src="https://accounts.google.com/gsi/client";gis.async=true;gis.defer=true;
-googleIdentityLoadPromise=new Promise((resolve,reject)=>{gis.onload=()=>{googleIdentityLoaded=true;resolve();};gis.onerror=()=>reject(new Error("Google Identity Services could not load. Check network or content blockers and refresh."));});
-document.head.appendChild(gis);
-async function beginGoogleSignIn(){
- if(!googleClientId){document.getElementById("settings").classList.add("open");toast("Add your Google OAuth Web Client ID first.");return;}
- if(!/^[0-9]+-[a-z0-9-]+\\.apps\\.googleusercontent\\.com$/i.test(googleClientId)){document.getElementById("settings").classList.add("open");toast("That does not look like a Google Web Client ID. Paste the value ending in .apps.googleusercontent.com.");return;}
- try{
-  if(!window.google?.accounts?.oauth2)await Promise.race([googleIdentityLoadPromise,new Promise((_,reject)=>setTimeout(()=>reject(new Error("Google sign-in is taking too long to load. Refresh the page and try again.")),12000))]);
-  if(!window.google?.accounts?.oauth2)throw new Error("Google Identity Services loaded, but the OAuth library is unavailable.");
-  if(!googleTokenClient){
-   googleTokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:googleClientId,
-    scope:"openid email profile https://www.googleapis.com/auth/youtube.readonly",
-    include_granted_scopes:true,
-    callback:async response=>{
-     if(response.error){const detail=response.error_description||response.error_subtype||response.error;toast("Google OAuth: "+detail);setStatus("GOOGLE AUTHENTICATION FAILED");return;}
-     if(!response.access_token){toast("Google returned no access token. Check OAuth consent-screen configuration.");return;}
-     googleToken=response.access_token;
-     try{
-      const r=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+googleToken}});
-      if(!r.ok)throw new Error("Google authorised the request but the account profile could not be read (HTTP "+r.status+").");
-      googleUser=await r.json();
-      document.getElementById("account-avatar").src=googleUser.picture||"";
-      document.getElementById("account-identity").style.display="flex";
-      document.getElementById("account-email").textContent=googleUser.email||"Connected Google account";
-      document.getElementById("google-signin").style.display="none";
-      document.getElementById("google-signout").style.display="inline-block";
-      document.getElementById("settings").classList.remove("open");
-      setStatus("SIGNED IN / "+(googleUser.email||"GOOGLE ACCOUNT").toUpperCase());
-      toast("Google account connected. YouTube read-only permission granted.");
-      if(!apiKey)discover(activeGallery.query||activeGallery.name);
-     }catch(e){googleToken=null;toast(e.message);setStatus("GOOGLE PROFILE COULD NOT BE LOADED");}
-    },
-    error_callback:error=>{const reason=error?.type||"popup_error";toast("Google sign-in window: "+reason.replaceAll("_"," ")+". Allow pop-ups for this site and retry.");}
-   });
-  }
-  googleTokenClient.requestAccessToken({prompt:"select_account"});
- }catch(e){toast(e.message);setStatus("GOOGLE SIGN-IN NOT READY");}
-}
-function signOutGoogle(){if(googleToken&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(googleToken,()=>{});googleToken=null;googleUser=null;googleTokenClient=null;document.getElementById("account-identity").style.display="none";document.getElementById("google-signin").style.display="inline-block";document.getElementById("google-signout").style.display="none";setStatus(apiKey?"YOUTUBE API READY IN THIS TAB":"SIGN IN OR CONNECT API KEY FOR LIVE SEARCH");toast("Google account disconnected from The Construct.");}
-if(googleClientId)document.getElementById("google-client-id").value=googleClientId;
 const yt=document.createElement("script");yt.src="https://www.youtube.com/iframe_api";document.head.appendChild(yt);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=.065;controls.enableRotate=true;controls.enableZoom=true;controls.enablePan=true;controls.minDistance=3.5;controls.maxDistance=90;controls.minPolarAngle=.12;controls.maxPolarAngle=Math.PI-.12;controls.target.set(0,0,0);controls.rotateSpeed=.62;controls.zoomSpeed=.85;controls.panSpeed=.65;controls.update();
-buildNav();updateHeading(activeGallery);buildCards();setStatus("YOUTUBE DISCOVERY READY — SEARCH A SUBJECT");animate();
+buildNav();updateHeading(activeGallery);buildCards();setStatus("FEATURED VIDEOS READY · SEARCH YOUTUBE TO EXPLORE");animate();
+// Refresh the featured starter collection from YouTube when the public API is available.
+discover(activeGallery.query);
 window.addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-document.addEventListener("keydown",e=>{const target=e.target;const typing=target&&(target.tagName==="INPUT"||target.tagName==="TEXTAREA"||target.isContentEditable);if(e.key==="Escape"){if(focusOpen)closeFocus();document.getElementById("settings").classList.remove("open");hidePreview();return;}if(!typing&&!focusOpen&&!document.getElementById("settings").classList.contains("open")){if(e.key==="ArrowRight")movePanel(1);if(e.key==="ArrowLeft")movePanel(-1);if(e.key==="ArrowUp")moveLevel(1);if(e.key==="ArrowDown")moveLevel(-1);}});
+document.addEventListener("keydown",e=>{const target=e.target;const typing=target&&(target.tagName==="INPUT"||target.tagName==="TEXTAREA"||target.isContentEditable);if(e.key==="Escape"){if(focusOpen)closeFocus();hidePreview();return;}if(!typing&&!focusOpen){if(e.key==="ArrowRight")movePanel(1);if(e.key==="ArrowLeft")movePanel(-1);if(e.key==="ArrowUp")moveLevel(1);if(e.key==="ArrowDown")moveLevel(-1);}});
 
 
 /* Full-screen world switch. The original gallery remains mounted and unchanged. */
