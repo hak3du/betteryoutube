@@ -204,7 +204,7 @@ const starterTopics=[
  {id:"philosophy",name:"Philosophy",query:"philosophy ideas reality knowledge documentary",title:"The Thinking Room",description:"Ideas about knowledge, reality, ethics and the questions that keep us thinking."}
 ];
 let galleries=starterTopics.map(x=>({...x,videos:[],dynamic:false}));
-let googleClientId=localStorage.getItem("construct_google_client_id")||"",googleToken=null,googleUser=null,googleTokenClient=null;
+let googleClientId=localStorage.getItem("construct_google_client_id")||"463366265213-pri8j1q2fvaonv2qcvbgialnpd7nbthf.apps.googleusercontent.com",googleToken=null,googleUser=null,googleTokenClient=null;
 let activeGallery=galleries[0],activeVideos=[],displayVideos=[],rotationOffset=0,rotationTimer=null,cards=[],selectedVideo=null,player=null,playerReady=false,focusOpen=false,apiKey="AIzaSyBv30_6IZ9P8OBtKhi-eE_S8dL8PcJD05M",watchHistory=JSON.parse(localStorage.getItem("construct_watch_history")||"[]"),searchSequence=0;
 const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x080c12,.012);
 const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,220);camera.position.set(0,1.4,13);
