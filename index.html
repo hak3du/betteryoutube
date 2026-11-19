@@ -190,11 +190,11 @@ function buildNav(){
 async function youtubeSearch(query,pageToken=null){
  if(!apiKey)return {videos:[],nextPageToken:null};
  const url=new URL("https://www.googleapis.com/youtube/v3/search");const params={part:"snippet",type:"video",maxResults:"24",q:query,safeSearch:"moderate",order:"relevance",};if(pageToken)params.pageToken=pageToken;if(apiKey)params.key=apiKey;url.search=new URLSearchParams(params).toString();
- const response=await fetch(url);const data=await response.json();if(!response.ok)throw new Error(data.error?.message||"YouTube search failed");
+ const response=await fetch(url,{headers:googleToken?{Authorization:"Bearer "+googleToken}:{}});const data=await response.json();if(!response.ok)throw new Error(data.error?.message||"YouTube search failed");
  const ids=(data.items||[]).map(x=>x.id?.videoId).filter(Boolean);if(!ids.length)return {videos:[],nextPageToken:null};
  const detailUrl=new URL("https://www.googleapis.com/youtube/v3/videos");detailUrl.search=new URLSearchParams({part:"snippet,contentDetails,statistics",id:ids.join(","),}).toString();
  if(apiKey)detailUrl.searchParams.set("key",apiKey);
- const details=await fetch(detailUrl);const detailData=await details.json();if(!details.ok)throw new Error(detailData.error?.message||"Could not load video details");
+ const details=await fetch(detailUrl,{headers:googleToken?{Authorization:"Bearer "+googleToken}:{}});const detailData=await details.json();if(!details.ok)throw new Error(detailData.error?.message||"Could not load video details");
  return {videos:(detailData.items||[]).map(x=>({id:x.id,title:cleanText(x.snippet.title),creator:cleanText(x.snippet.channelTitle),description:cleanText(x.snippet.description).slice(0,420),tags:x.snippet.tags||[],categoryId:x.snippet.categoryId,views:Number(x.statistics?.viewCount||0),publishedAt:x.snippet.publishedAt,thumbnail:x.snippet.thumbnails?.high?.url||x.snippet.thumbnails?.medium?.url||""})),nextPageToken:data.nextPageToken||null};
 }
 function interestScore(video,query){
@@ -288,7 +288,7 @@ async function beginGoogleSignIn(){
  if(!googleTokenClient){googleTokenClient=google.accounts.oauth2.initTokenClient({client_id:googleClientId,scope:"openid email profile https://www.googleapis.com/auth/youtube.readonly",callback:async response=>{
   if(response.error){toast("Google sign-in failed: "+response.error);return;}
   googleToken=response.access_token;
-  try{const r=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+googleToken}});if(!r.ok)throw new Error("Could not read Google account profile");googleUser=await r.json();document.getElementById("account-avatar").src=googleUser.picture||"";document.getElementById("account-identity").style.display="flex";document.getElementById("account-email").textContent=googleUser.email||"Google account connected";document.getElementById("google-signin").style.display="none";document.getElementById("google-signout").style.display="inline-block";setStatus("CONNECTED / "+(googleUser.email||"GOOGLE ACCOUNT").toUpperCase());toast("Your Google account is connected. YouTube read-only permission granted.");}
+  try{const r=await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+googleToken}});if(!r.ok)throw new Error("Could not read Google account profile");googleUser=await r.json();document.getElementById("account-avatar").src=googleUser.picture||"";document.getElementById("account-identity").style.display="flex";document.getElementById("account-email").textContent=googleUser.email||"Google account connected";document.getElementById("google-signin").style.display="none";document.getElementById("google-signout").style.display="inline-block";setStatus("CONNECTED / "+(googleUser.email||"GOOGLE ACCOUNT").toUpperCase());toast("Your Google account is connected. YouTube read-only permission granted.");discover(activeGallery.query||activeGallery.name);}
   catch(e){googleToken=null;toast(e.message);}
  }});}
  googleTokenClient.requestAccessToken({prompt:"select_account"});
