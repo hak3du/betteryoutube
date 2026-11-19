@@ -14,7 +14,7 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 .topbar{position:absolute;top:0;left:0;right:0;height:82px;padding:18px 30px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(3,5,8,.9),rgba(3,5,8,0));pointer-events:none}
 .brand{display:flex;align-items:center;gap:13px}.brand-mark{width:29px;height:29px;border:1px solid rgba(155,231,226,.7);transform:rotate(45deg);position:relative}.brand-mark:after{content:"";position:absolute;inset:6px;border:1px solid rgba(155,231,226,.55)}.brand-name{font-size:11px;letter-spacing:4px;font-weight:650}.brand-sub{font-size:9px;color:#71808c;letter-spacing:2px;margin-top:4px}
 .top-meta{font-size:9px;letter-spacing:2px;color:#778591;text-transform:uppercase}
-.account-area{display:flex;align-items:center;gap:10px;pointer-events:auto}.account-btn{border:1px solid rgba(155,231,226,.45);background:rgba(8,12,17,.78);color:#9be7e2;padding:10px 13px;font-size:9px;letter-spacing:1.3px;cursor:pointer}.account-btn:hover{background:rgba(155,231,226,.12)}#account-identity{display:none;align-items:center;gap:8px;color:#cbd8dc;font-size:10px;letter-spacing:.4px;max-width:210px}#account-identity img{width:25px;height:25px;border-radius:50%;object-fit:cover}#account-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 .rail{position:absolute;left:26px;top:112px;bottom:34px;width:204px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
 .rail-label{font-size:9px;letter-spacing:2.4px;color:#71808c;margin:0 0 10px 12px;text-transform:uppercase}
 .category{height:48px;border:1px solid transparent;background:transparent;color:#a7b1bb;text-align:left;padding:0 13px;display:flex;align-items:center;gap:12px;cursor:pointer;letter-spacing:.8px;font-size:11px;transition:.25s}
@@ -42,7 +42,7 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 #toast{position:absolute;left:50%;bottom:75px;transform:translateX(-50%);padding:10px 15px;background:#101820;border:1px solid var(--line);color:#c6d2d8;font-size:10px;letter-spacing:.6px;opacity:0;transition:.25s;pointer-events:none;z-index:20}#toast.show{opacity:1}
 @media(max-width:760px){.topbar{padding:16px}.top-meta{display:none}.rail{left:12px;top:84px;bottom:auto;width:auto;right:12px;flex-direction:row;overflow-x:auto;gap:5px}.rail-label,.rail-bottom{display:none}.category{flex:0 0 auto;height:36px;padding:0 10px;font-size:9px}.category .dot{display:none}.search-wrap{top:137px;width:calc(100% - 32px)}.scene-heading{left:18px;top:194px}.scene-heading h1{font-size:27px}.scene-heading p{max-width:260px;line-height:1.5}.hint{bottom:15px;font-size:8px}.status{display:none}.focus-shell{height:94vh;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:10px}.focus-side{display:grid;grid-template-columns:1fr 1fr}.side-panel{padding:12px}.side-panel:nth-child(2){display:none}.player-frame{min-height:220px}.video-details h2{font-size:16px}}
 
-.settings-toggle{position:absolute;right:28px;top:101px;pointer-events:auto;border:1px solid rgba(155,231,226,.35);background:rgba(8,12,17,.72);color:#9be7e2;padding:11px 14px;font-size:9px;letter-spacing:1.5px;cursor:pointer}
+
 #search-state{font-size:8px;letter-spacing:1px;color:#74838d;margin:8px 0 0 3px;text-transform:uppercase}
 #settings{display:none;position:absolute;z-index:15;right:28px;top:145px;width:min(380px,calc(100vw - 40px));padding:20px;background:rgba(8,13,19,.97);border:1px solid rgba(155,231,226,.32);box-shadow:0 24px 70px #000;pointer-events:auto}
 #settings.open{display:block}.settings-head{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:2px;color:#9be7e2}
@@ -56,7 +56,7 @@ body:before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;back
 :focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 .category{flex-shrink:0}
-@media(max-width:760px){.settings-toggle{right:16px;top:190px;padding:9px}.search-wrap{top:137px}.scene-heading{top:245px}.rail{top:84px}.settings-toggle{top:188px}}
+@media(max-width:760px){.search-wrap{top:137px}.scene-heading{top:245px}.rail{top:84px}}
 
 /* Penrose navigation */
 .loop-nav{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);display:grid;grid-template-columns:42px 42px 42px;grid-template-rows:36px 36px;gap:5px;pointer-events:auto;z-index:8}
@@ -142,12 +142,12 @@ body.immersive-active #immersive-world{visibility:visible;opacity:1;pointer-even
 <div id="ui">
   <header class="topbar">
     <div class="brand"><div class="brand-mark"></div><div><div class="brand-name">THE CONSTRUCT</div><div class="brand-sub">A SPATIAL VIDEO LIBRARY</div></div></div>
-    <div class="account-area"><div id="account-identity"><img id="account-avatar" alt=""><span id="account-email"></span></div><button class="account-btn" id="google-signin">SIGN IN WITH GOOGLE</button><button class="account-btn" id="google-signout" style="display:none">SIGN OUT</button></div>
+    <div class="top-meta">PUBLIC VIDEO LIBRARY · NO ACCOUNT REQUIRED</div>
   </header>
   <nav class="rail" id="categories"><div class="rail-label">Explore environments</div></nav>
-  <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" aria-label="Search public YouTube videos" placeholder="SEARCH YOUTUBE — PRESS ENTER TO EXPLORE" autocomplete="off"><div id="search-state" role="status" aria-live="polite">LIVE YOUTUBE DISCOVERY READY</div></div><button id="settings-toggle" class="settings-toggle">ACCOUNT SETTINGS</button>
+  <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" aria-label="Search public YouTube videos" placeholder="SEARCH YOUTUBE — PRESS ENTER TO EXPLORE" autocomplete="off"><div id="search-state" role="status" aria-live="polite">LIVE YOUTUBE DISCOVERY READY</div></div>
   <div class="scene-heading"><div class="eyebrow" id="scene-kicker">ENVIRONMENT 01 / THE QUANTUM GALLERY</div><h1 id="scene-title">The Quantum Gallery</h1><p id="scene-description">From the arguments of Einstein and Bohr to the strange behaviour of entangled particles.</p></div>
-  <div class="hint">SCROLL TO UNFOLD MORE VIDEOS · CLICK A PANEL TO PLAY · DRAG TO LOOK AROUND</div><div class="loop-counter" id="loop-counter">PENROSE LOOP / 01 OF 24</div><div class="loop-nav" aria-label="Navigate the infinite gallery"><button class="up" id="nav-up" aria-label="Previous level">↑</button><button class="left" id="nav-left" aria-label="Previous panel">←</button><button class="down" id="nav-down" aria-label="Next level">↓</button><button class="right" id="nav-right" aria-label="Next panel">→</button></div><section id="settings" role="dialog" aria-label="YouTube API connection settings" aria-modal="false"><div class="settings-head"><span>LIVE DISCOVERY CONNECTION</span><button id="settings-close">×</button></div><p>Google sign-in is optional. Public video discovery works with the app’s configured YouTube Data API key; users do not need to sign in. Add an OAuth Web Client ID only if you want to connect your personal Google / YouTube account. Never paste a client secret here.</p><label for="google-client-id" style="display:block;color:#9aa8b1;font-size:9px;letter-spacing:1px;margin:14px 0 7px">OPTIONAL · GOOGLE SIGN-IN CLIENT ID</label><input id="google-client-id" type="text" autocomplete="off" aria-label="Google OAuth client ID" placeholder="Only needed for Google sign-in"><div class="settings-actions"><button id="save-client-id">SAVE CLIENT ID</button><a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener">CREATE OAUTH CLIENT ↗</a></div><div class="api-ready-note" role="status" style="margin-top:15px;padding:12px;border:1px solid rgba(155,231,226,.28);background:rgba(155,231,226,.06);color:#9be7e2;font-size:10px;line-height:1.6;letter-spacing:.5px">PUBLIC YOUTUBE DISCOVERY IS CONFIGURED · SEARCH AND VIDEO DETAILS LOAD AUTOMATICALLY</div><small>Google sign-in is optional and requires a Web application OAuth Client ID with this site listed under Authorized JavaScript origins. Public browsing does not require Google sign-in. The app never receives or stores your Google password; the access token stays in this tab. The app never receives or stores your Google password; the access token stays in this tab. YouTube does not expose its private Home recommendation algorithm or watch history through this API.</small></section>
+  <div class="hint">SCROLL TO UNFOLD MORE VIDEOS · CLICK A PANEL TO PLAY · DRAG TO LOOK AROUND</div><div class="loop-counter" id="loop-counter">PENROSE LOOP / 01 OF 24</div><div class="loop-nav" aria-label="Navigate the infinite gallery"><button class="up" id="nav-up" aria-label="Previous level">↑</button><button class="left" id="nav-left" aria-label="Previous panel">←</button><button class="down" id="nav-down" aria-label="Next level">↓</button><button class="right" id="nav-right" aria-label="Next panel">→</button></div>
   <div class="status" id="status">CURATED LIBRARY&nbsp; / &nbsp;00 ITEMS</div>
 </div>
 <div id="focus">
@@ -203,9 +203,18 @@ const starterTopics=[
  {id:"history",name:"History",query:"world history civilisation documentary",title:"The Human Story",description:"Civilisations, inventions and the people whose decisions changed history."},
  {id:"philosophy",name:"Philosophy",query:"philosophy ideas reality knowledge documentary",title:"The Thinking Room",description:"Ideas about knowledge, reality, ethics and the questions that keep us thinking."}
 ];
-let galleries=starterTopics.map(x=>({...x,videos:[],dynamic:false}));
-let googleClientId=localStorage.getItem("construct_google_client_id")||"463366265213-pri8j1q2fvaonv2qcvbgialnpd7nbthf.apps.googleusercontent.com",googleToken=null,googleUser=null,googleTokenClient=null;
-let activeGallery=galleries[0],activeVideos=[],displayVideos=[],rotationOffset=0,rotationTimer=null,cards=[],selectedVideo=null,player=null,playerReady=false,focusOpen=false,apiKey="AIzaSyBv30_6IZ9P8OBtKhi-eE_S8dL8PcJD05M",watchHistory=JSON.parse(localStorage.getItem("construct_watch_history")||"[]"),searchSequence=0;
+const featuredDefaults={
+ quantum:[
+  {id:"XKSjCOKDtpk",title:"What this strange quantum effect reveals about potentials",creator:"Veritasium",description:"A modern look at quantum potentials and the Aharonov–Bohm effect.",tags:["quantum physics","physics"],thumbnail:"https://i.ytimg.com/vi/XKSjCOKDtpk/hqdefault.jpg",views:0,publishedAt:"2026-01-29"},
+  {id:"WIyTZDHuarQ",title:"Is This What Quantum Mechanics Looks Like?",creator:"Veritasium",description:"A visual exploration of pilot-wave theory and quantum mechanics.",tags:["quantum mechanics","physics"],thumbnail:"https://i.ytimg.com/vi/WIyTZDHuarQ/hqdefault.jpg",views:0,publishedAt:"2016-11-02"}
+ ],
+ nature:[
+  {id:"oggsd--GZko",title:"Breathtaking Wildlife Worlds",creator:"BBC Earth",description:"Wildlife moments narrated by David Attenborough.",tags:["wildlife","nature"],thumbnail:"https://i.ytimg.com/vi/oggsd--GZko/hqdefault.jpg",views:0,publishedAt:"2026-04-17"},
+  {id:"E5fofNAbm78",title:"The Wild Side of Our Planet",creator:"BBC Earth",description:"Wildlife and natural history from BBC Earth.",tags:["wildlife","nature"],thumbnail:"https://i.ytimg.com/vi/E5fofNAbm78/hqdefault.jpg",views:0,publishedAt:"2026-01-09"}
+ ]
+};
+let galleries=starterTopics.map(x=>({...x,videos:featuredDefaults[x.id]||[],dynamic:false}));
+let activeGallery=galleries[0],activeVideos=[...galleries[0].videos],displayVideos=[...galleries[0].videos],rotationOffset=0,rotationTimer=null,cards=[],selectedVideo=null,player=null,playerReady=false,focusOpen=false,apiKey="AIzaSyBv30_6IZ9P8OBtKhi-eE_S8dL8PcJD05M",watchHistory=JSON.parse(localStorage.getItem("construct_watch_history")||"[]"),searchSequence=0;
 const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x080c12,.012);
 const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,220);camera.position.set(0,1.4,13);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.outputEncoding=THREE.sRGBEncoding;document.getElementById("canvas-container").appendChild(renderer.domElement);
